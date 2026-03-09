@@ -1,0 +1,47 @@
+{
+  "name": "vvtree",
+  "version": "0.0.1",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite dev"
+  },
+  "type": "module",
+  "module": "./dist/vvtree.esm.js",
+  "types": "./dist/vvtree.d.ts",
+  "imports": {
+    "#base/*": "./src/*"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/vvtree.esm.js",
+      "types": "./dist/vvtree.d.ts"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "homepage": "https://fan-ix.github.io/vvtree/",
+  "repository": "https://github.com/Fan-iX/vvtree/",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@vueuse/core": "^13.7.0",
+    "vue": "^3.5.18",
+    "vvplot": "^0.3.0"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.65",
+    "@iconify/vue": "^5.0.0",
+    "@tailwindcss/vite": "^4.1.12",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "highlight.js": "^11.11.1",
+    "jspdf": "^4.0.0",
+    "svg2pdf.js": "^2.7.0",
+    "tailwind-merge": "^3.3.1",
+    "vite": "^7.0.6",
+    "vite-plugin-dts": "^4.5.4"
+  }
+}

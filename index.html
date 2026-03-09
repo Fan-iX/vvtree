@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VVTree</title>
+    <link rel="stylesheet" href="app/style/style.css">
+</head>
+
+<body>
+    <div id="app" class="h-dvh py-2"></div>
+    <script type="module">
+        import { createApp } from 'vue'
+        import App from './app/index.vue'
+        import VVTree from './src/components/VVTree.vue'
+        import { Icon } from "@iconify/vue"
+        import twMergeDirective from './app/js/tw-merge.js'
+
+        import { addCollection } from '@iconify/vue'
+        import lucideIcons from '@iconify-json/lucide/icons.json'
+
+        addCollection(lucideIcons)
+        let app = createApp(App)
+        app.component("VVTree", VVTree)
+        app.component("Icon", Icon)
+        app.directive("twMerge", twMergeDirective)
+        app.mount('#app')
+    </script>
+</body>
+
+</html>
