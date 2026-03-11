@@ -116,9 +116,9 @@ const fn_points = d => [{ x: d.$rectangular.x, y: d.$rectangular.y }, { x: d.par
                 :xend="d => d.parent.$unrooted.x" :yend="d => d.parent.$unrooted.y" color="transparent" :linewidth="10"
                 @click="linkclick" @contextmenu="linkclick" class="vvplot-interactive" />
             <VVGeomMarkdownsegment :data="tipNodes" :xend="d => d.$unrooted.x" :yend="d => d.$unrooted.y"
-                :label="fn_text_label" :x="d => d.parent?.$unrooted.x ?? d.$unrooted.x"
-                :y="d => d.parent?.$unrooted.y ?? d.$unrooted.y" :color="fn_text_color" :size="fn_text_size"
-                :angle="d => d.$unrooted.angle" text-align="post" :inset="labelOffset" />
+                :label="fn_text_label" :x="d => d.$unrooted.parent.$unrooted.x"
+                :y="d => d.$unrooted.parent.$unrooted.y" :color="fn_text_color" :size="fn_text_size" text-align="post"
+                :inset="labelOffset" />
             <VVGeomPoint :data="branchNodes" :x="d => d.$unrooted.x" :y="d => d.$unrooted.y" :size="fn_point_size"
                 :color="fn_point_color" @click="nodeclick" @contextmenu="nodeclick" class="cursor-pointer"
                 render="svg" />
