@@ -10,6 +10,7 @@ import Popover from './widget/Popover.vue'
 import AestheticsWizard from './AestheticsWizard.vue'
 import AttributeInput from './AttributeInput.vue'
 import BioTree from './Tree.vue'
+const emit = defineEmits(['load'])
 
 import { downloadContent, openContentWindow, palettes, svg2png, svg2pdf, svg2svg } from '../js/utils.js'
 import { ref, computed, watch, onMounted, useTemplateRef } from 'vue'
@@ -22,57 +23,121 @@ const containerRef = useTemplateRef('container')
 
 watch([tree, config], ([nt, nc], [ot, oc]) => {
     if (nc != oc) {
-        tree.value = VVTreeNode.parseNewick(nc.newick ?? nc.data)
-        config.value.height ??= containerRef.value?.clientHeight
-        config.value.width ??= containerRef.value?.clientWidth
+        config.value.layout ??= 'rectangular'
+        config.value.display ??= {}
+        tree.value = VVTreeNode.parseNewick(nc.newick ?? nc.data) ?? new VVTreeNode()
         activeNode.value = tree.value
     } else {
         config.value.newick = nt?.toNewickString?.()
     }
 }, { deep: true, immediate: true })
+watch(() => config.value.layout, l => {
+    config.value.display[l] ??= {}
+    config.value.display[l].height ??= containerRef.value?.clientHeight
+    config.value.display[l].width ??= containerRef.value?.clientWidth
+}, { deep: true, immediate: true })
+const zoom_scale = computed(() => config.value?.display?.[config.value.layout]?.zoom_scale ?? 1)
 
 function buildTree() {
-    tree.value = VVTreeNode.from(VVTreeNode.parseNewick(config.value.data))
+    tree.value = VVTreeNode.parseNewick(config.value.data) ?? new VVTreeNode()
 }
 
 async function onpaste(e) {
-    if (!e.clipboardData.files.length) return
-    config.value.data = await e.clipboardData.files[0].text()
-    buildTree()
+    if (e.clipboardData.getData('vvtree-tree-list')) {
+        emit('load', JSON.parse(e.clipboardData.getData('vvtree-tree-list')))
+    } else if (e.clipboardData.files.length) {
+        let trees = []
+        for (const file of e.clipboardData.files) {
+            const text = await file.text()
+            if (text.match(/begin trees;\s*(?:translate(.*?);)?.*^\s*(tree.*?[;\n$])/sim)) {
+                let [, translation, nwk] = text.match(/begin trees;\s*(?:translate(.*?);)?.*^\s*(tree.*?[;\n$])/sim)
+                nwk = nwk.replace(/^.*?=(\s+\[\S+\])?\s+/, "")
+                if (translation) {
+                    let tree = VVTreeNode.parseNewick(nwk)
+                    translation = translation.trim().split(/\s*,\s*/).map(x => x.split(/\s+/))
+                    translation = Object.assign(
+                        Object.fromEntries(translation.map((x, i) => [i + 1, x[1]])),
+                        Object.fromEntries(translation)
+                    )
+                    for (const tip of tree.allTips) {
+                        if (tip.name && translation[tip.name]) {
+                            tip.name = translation[tip.name]
+                        }
+                    }
+                    nwk = tree.toNewickString()
+                }
+                trees.push({ name: file.name, data: nwk })
+            } else if (text) {
+                try {
+                    VVTreeNode.parseNewick(text).toNewickString()
+                    trees.push({ name: file.name, data: text })
+                } catch { }
+            }
+        }
+        emit('load', trees.reverse())
+    }
+}
+async function oncopy(e) {
+    e.preventDefault()
+    e.clipboardData.setData('text/plain', config.value.newick)
+    e.clipboardData.setData('vvtree-tree-list', JSON.stringify([config.value]))
+}
+function copy() {
+    if (navigator.clipboard) {
+        navigator.clipboard.write([
+            new ClipboardItem({
+                "text/plain": config.value.newick,
+                "vvtree-tree-list": JSON.stringify([config.value]),
+            })
+        ])
+    } else {
+        containerRef.value.focus()
+        document.execCommand('copy')
+    }
 }
 
 function onWheel(e) {
     let rect = containerRef.value.getBoundingClientRect()
+    let layout = config.value.layout
     if (e.altKey) {
         e.preventDefault()
         let level = 2 ** (-e.deltaY / 1000)
         if (e.shiftKey) {
-            config.value.width *= level
+            config.value.display[layout].width *= level
             containerRef.value.scrollLeft += (e.clientX - rect.left + containerRef.value.scrollLeft) * (level - 1)
         } else {
-            config.value.height *= level
+            config.value.display[layout].height *= level
             containerRef.value.scrollTop += (e.clientY - rect.top + containerRef.value.scrollTop) * (level - 1)
         }
     }
     if (e.ctrlKey) {
         e.preventDefault()
         let level = 2 ** (-e.deltaY / 1000)
-        zoom_scale.value *= level
+        config.value.display[layout].zoom_scale = zoom_scale.value * level
     }
 }
 onMounted(() => {
-    config.value.height ??= containerRef.value?.clientHeight
-    config.value.width ??= containerRef.value?.clientWidth
+    config.value.layout ??= 'rectangular'
 })
-const theme = computed(() => ({
-    plot: {
-        margin: config.value.margin || undefined,
-        margin_right: config.value.margin_right || undefined,
-        margin_left: config.value.margin_left || undefined,
-        margin_top: config.value.margin_top || undefined,
-        margin_bottom: config.value.margin_bottom || undefined,
+const vBind = computed(() => {
+    let layout = config.value.layout
+    return {
+        layout,
+        'time-scale': config.value.display[layout]?.time_scale,
+        'align-tooltip': config.value.display[layout]?.align_tooltip,
+        'branch-length': config.value.display[layout]?.branch_length,
+        'label-offset': config.value.display[layout]?.label_offset,
+        theme: {
+            plot: {
+                margin: config.value.display[layout]?.margin ?? undefined,
+                margin_right: config.value.display[layout]?.margin_right ?? undefined,
+                margin_left: config.value.display[layout]?.margin_left ?? undefined,
+                margin_top: config.value.display[layout]?.margin_top ?? undefined,
+                margin_bottom: config.value.display[layout]?.margin_bottom ?? undefined,
+            }
+        }
     }
-}))
+})
 const biotree = useTemplateRef('biotree')
 
 const stat = computed(() => {
@@ -93,7 +158,7 @@ const nodeInfo = computed(() => {
         name: activeNode.value.name,
         label: activeNode.value.label ?? activeNode.value.name,
         depth, height,
-        'depth%': depth / (depth + height) * 100,
+        'depth%': depth / (depth + height) * 100 || 0,
         annotation: activeNode.value.annotations,
     }
 })
@@ -161,7 +226,6 @@ async function openAsPdf(svgXml) {
     let blob = await svg2pdf(svgXml)
     openContentWindow(blob)
 }
-const zoom_scale = ref(1)
 </script>
 
 <template>
@@ -182,17 +246,17 @@ const zoom_scale = ref(1)
                         </select>
                         <label class="col-span-full">
                             label offset:
-                            <WInput type="number" v-model.number="config.label_offset" :step="1" class="w-[6ch]"
-                                placeholder="6" />
+                            <WInput type="number" v-model.number="config.display[config.layout].label_offset" :step="1"
+                                class="w-[6ch]" placeholder="6" />
                         </label>
                         <label>
-                            <input type="checkbox" v-model="config.branch_length">branch length
+                            <input type="checkbox" v-model="config.display[config.layout].branch_length">branch length
                         </label>
                         <label>
-                            <input type="checkbox" v-model="config.time_scale">time scale
+                            <input type="checkbox" v-model="config.display[config.layout].time_scale">time scale
                         </label>
                         <label v-if="config.layout == 'rectangular'">
-                            <input type="checkbox" v-model="config.align_tooltip">align tooltip
+                            <input type="checkbox" v-model="config.display[config.layout].align_tooltip">align tooltip
                         </label>
                     </div>
                     plot size
@@ -200,46 +264,49 @@ const zoom_scale = ref(1)
                     <div class="grid grid-cols-2 ml-2">
                         <label>
                             width:
-                            <WInput type="number" v-model.int="config.width" :step="10" class="w-[6ch]" />
+                            <WInput type="number" v-model.int="config.display[config.layout].width" :step="10"
+                                class="w-[6ch]" />
                         </label>
                         <label>
                             height:
-                            <WInput type="number" v-model.int="config.height" :step="10" class="w-[6ch]" />
+                            <WInput type="number" v-model.int="config.display[config.layout].height" :step="10"
+                                class="w-[6ch]" />
                         </label>
                         <div>
                             <label>
                                 zoom:
-                                <WInput type="number" v-model.number="zoom_scale" :step="0.1" class="w-[4ch]" />
+                                <WInput type="number" v-model.number="config.display[config.layout].zoom_scale"
+                                    :step="0.1" :min="0" class="w-[4ch]" placeholder="1" />
                             </label>
                             <Popover inline variant="tooltip" side="top">
                                 <template #trigger>
-                                    <Icon icon="lucide:x" @click="zoom_scale = 1"
+                                    <Icon icon="lucide:x" @click="delete config.display[config.layout].zoom_scale"
                                         class="inline-block align-middle hover:text-red-500 cursor-pointer" />
                                 </template>
                                 reset zoom
                             </Popover>
                         </div>
                     </div>
-                    <WCheckInput type="number" v-model.int="config.margin" class="w-[6ch]"
+                    <WCheckInput type="number" v-model.int="config.display[config.layout].margin" class="w-[6ch]"
                         :step="config.layout == 'rectangular' ? 5 : 25">
                         margin:
                     </WCheckInput>
                     <hr class="text-gray-300">
                     <div class="grid grid-rows-2 grid-flow-col ml-2">
-                        <WCheckInput type="number" v-model.int="config.margin_right" class="w-[6ch]"
-                            :step="config.layout == 'rectangular' ? 20 : 25">
+                        <WCheckInput type="number" v-model.int="config.display[config.layout].margin_right"
+                            class="w-[6ch]" :step="config.layout == 'rectangular' ? 20 : 25">
                             right:
                         </WCheckInput>
-                        <WCheckInput type="number" v-model.int="config.margin_left" class="w-[6ch]"
-                            :step="config.layout == 'rectangular' ? 5 : 25">
+                        <WCheckInput type="number" v-model.int="config.display[config.layout].margin_left"
+                            class="w-[6ch]" :step="config.layout == 'rectangular' ? 5 : 25">
                             left:
                         </WCheckInput>
-                        <WCheckInput type="number" v-model.int="config.margin_top" class="w-[6ch]"
-                            :step="config.layout == 'rectangular' ? 5 : 25">
+                        <WCheckInput type="number" v-model.int="config.display[config.layout].margin_top"
+                            class="w-[6ch]" :step="config.layout == 'rectangular' ? 5 : 25">
                             top:
                         </WCheckInput>
-                        <WCheckInput type="number" v-model.int="config.margin_bottom" class="w-[6ch]"
-                            :step="config.layout == 'rectangular' ? 5 : 25">
+                        <WCheckInput type="number" v-model.int="config.display[config.layout].margin_bottom"
+                            class="w-[6ch]" :step="config.layout == 'rectangular' ? 5 : 25">
                             bottom:
                         </WCheckInput>
                     </div>
@@ -266,7 +333,7 @@ const zoom_scale = ref(1)
                         </template>
                         <p>dump node to console</p>
                     </Popover>
-                    <Popover mode="hover" variant="tooltip" inline v-if="activeNode.parent">
+                    <Popover mode="hover" variant="tooltip" inline v-if="activeNode?.parent">
                         <template #trigger>
                             <button class="align-middle rounded-md px-1 py-1 hover:bg-current/5"
                                 @click="activeNode = activeNode.parent">
@@ -390,8 +457,8 @@ const zoom_scale = ref(1)
                         <div class="flex flex-col">
                             <button @click="openAsSvg(biotree.plot.serialize())" class="px-2 py-1 hover:bg-current/5">
                                 <Icon icon="lucide:square-arrow-out-up-right"
-                                    class="text-xl inline-block align-middle" /> open in
-                                new tab
+                                    class="text-xl inline-block align-middle" />
+                                open in new tab
                             </button>
                         </div>
                     </Popover>
@@ -416,8 +483,8 @@ const zoom_scale = ref(1)
                         <div class="flex flex-col">
                             <button @click="openAsPng(biotree.plot.serialize())" class="px-2 py-1 hover:bg-current/5">
                                 <Icon icon="lucide:square-arrow-out-up-right"
-                                    class="text-xl inline-block align-middle" /> open in
-                                new tab
+                                    class="text-xl inline-block align-middle" />
+                                open in new tab
                             </button>
                         </div>
                     </Popover>
@@ -442,31 +509,37 @@ const zoom_scale = ref(1)
                         <div class="flex flex-col">
                             <button @click="openAsPdf(biotree.plot.serialize())" class="px-2 py-1 hover:bg-current/5">
                                 <Icon icon="lucide:square-arrow-out-up-right"
-                                    class="text-xl inline-block align-middle" /> open in
-                                new tab
+                                    class="text-xl inline-block align-middle" />
+                                open in new tab
                             </button>
                         </div>
                     </Popover>
                 </div>
             </WDetails>
         </div>
-        <div class="overflow-auto relative" ref="container">
-            <div :style="{ transform: `scale(${zoom_scale})`, width: `${config.width * zoom_scale}px`, height: `${config.height * zoom_scale}px` }"
-                class="origin-top-left">
-                <BioTree ref="biotree" v-model:tree="tree" :theme="theme" :branch-length="config.branch_length"
-                    :time-scale="config.time_scale" :align-tooltip="config.align_tooltip" v-model:width="config.width"
-                    v-model:height="config.height" :layout="config.layout" :label-offset="config.label_offset"
-                    @wheel="onWheel" @nodeclick.prevent="onNodeClick" resize />
+        <div class="overflow-auto relative" ref="container" @paste="onpaste" @copy="oncopy" tabindex="-1">
+            <div :style="{ transform: `scale(${zoom_scale})` }" class="origin-top-left w-max h-max">
+                <BioTree ref="biotree" v-model:tree="tree" v-model:width="config.display[config.layout].width"
+                    v-model:height="config.display[config.layout].height" v-bind="vBind" @wheel="onWheel"
+                    @nodeclick.prevent="onNodeClick" resize />
             </div>
             <div class="absolute right-2 top-0 flex flex-row">
                 <Popover inline variant="tooltip">
                     <template #trigger>
-                        <button class="cursor-pointer inline text-xl rounded-md px-1 py-1 hover:bg-current/5"
+                        <button class="cursor-pointer text-xl rounded-md p-1 hover:bg-current/5"
                             @click="tree = VVTreeNode.from(VVTreeNode.parseNewick(config.data))">
                             <Icon icon="lucide:undo-2" />
                         </button>
                     </template>
                     reset tree
+                </Popover>
+                <Popover inline variant="tooltip">
+                    <template #trigger>
+                        <button class="cursor-pointer text-xl rounded-md p-1 hover:bg-current/5" @click="copy">
+                            <Icon icon="lucide:clipboard" />
+                        </button>
+                    </template>
+                    copy tree to clipboard
                 </Popover>
             </div>
         </div>

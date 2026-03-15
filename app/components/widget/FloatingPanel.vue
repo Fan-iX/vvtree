@@ -17,10 +17,10 @@ const className = computed(() => [
 ])
 watch(open, v => nextTick(() => { if (v) panel.value.focus() }))
 const style = computed(() => ({
-    left: left.value ? left.value + "px" : null,
-    top: top.value ? top.value + "px" : null,
-    width: width.value ? width.value + "px" : null,
-    height: !fold.value && height.value ? height.value + "px" : null,
+    left: left.value != null ? left.value + "px" : null,
+    top: top.value != null ? top.value + "px" : null,
+    width: width.value != null ? width.value + "px" : null,
+    height: !fold.value && height.value != null ? height.value + "px" : null,
 }))
 const panel = useTemplateRef('panel')
 function onpointerdown(e) {

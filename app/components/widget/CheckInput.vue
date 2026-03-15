@@ -28,7 +28,10 @@ function oncheckchange(e) {
     }
 }
 const inputValue = ref(modelValue ?? coalesce ?? null)
-watch(() => modelValue, v => { inputValue.value = v })
+watch(() => modelValue, v => {
+    inputValue.value = v
+    checkValue.value = v != null
+})
 function onchange(e) {
     emit('change', e)
     if (!modelModifiers.lazy) return

@@ -3,31 +3,36 @@ import { computed, ref, useTemplateRef } from 'vue'
 import BioTreeStudio from './components/TreeStudio.vue'
 import WidgetDragList from './components/widget/DragList.vue'
 import Popover from './components/widget/Popover.vue'
-import TreeWizard from './components/TreeWizard.vue'
+import TreeImportWizard from './components/TreeImportWizard.vue'
+import TreeExportWizard from './components/TreeExportWizard.vue'
 
 import { useLocalStorage } from '@vueuse/core'
 const treeRef = useTemplateRef('tree-ref')
 
-const tree_data = useLocalStorage('tree-studio-storage', [{ name: "New tree", data: "" }])
+const tree_data = useLocalStorage('tree-studio-storage', [{
+    name: "New tree", data: "", layout: 'rectangular', display: {
+        rectangular: { margin_left: 5, margin_right: 120, branch_length: true, },
+        unrooted: { margin: 120, branch_length: true, }
+    },
+}])
 const idx = ref(0)
 const current_tree = computed(() => tree_data.value[idx.value])
-const show_wizard = ref(false)
+const show_import_wizard = ref(false)
+const show_export_wizard = ref(false)
 
-function add_tree({
-    name = "New tree", data = "", width = 600
-} = {}) {
-    tree_data.value.unshift({
-        name, data, width, margin_left: 5, margin_right: 120, branch_length: true,
-        layout: 'rectangular',
-    })
-    idx.value = 0
+function add_tree(tree = {}) {
+    tree.name ??= "New tree"
+    tree.data ??= ""
+    tree.layout ??= 'rectangular'
+    tree.display ??= {
+        rectangular: { margin_left: 5, margin_right: 120, branch_length: true, },
+        unrooted: { margin: 120, branch_length: true, }
+    }
+    tree_data.value.unshift(tree)
 }
 function remove_tree(i) {
-    if (tree_data.value.length == 1) {
-        tree_data.value = [{ name: "New tree", data: "" }]
-    } else {
-        tree_data.value.splice(i, 1)
-    }
+    tree_data.value.splice(i, 1)
+    if (tree_data.value.length == 0) add_tree()
     idx.value = Math.min(idx.value, tree_data.value.length - 1)
 }
 function loadtree(trees) {
@@ -61,16 +66,25 @@ function reorderTree(i, j) {
                             <Icon icon="lucide:plus" />
                         </button>
                     </template>
-                    add new tree
+                    create new tree
                 </Popover>
                 <Popover mode="hover" variant="tooltip" side="bottom">
                     <template #trigger>
                         <button class="align-middle hover:text-blue-500 cursor-pointer"
-                            @click="show_wizard = !show_wizard">
+                            @click="show_import_wizard = !show_import_wizard">
                             <Icon icon="lucide:file-input" />
                         </button>
                     </template>
-                    load from newick/nexus file
+                    import from newick/nexus file or clipboard
+                </Popover>
+                <Popover mode="hover" variant="tooltip" side="bottom">
+                    <template #trigger>
+                        <button class="align-middle hover:text-blue-500 cursor-pointer"
+                            @click="show_export_wizard = !show_export_wizard">
+                            <Icon icon="lucide:clipboard-copy"  class="-scale-x-100"/>
+                        </button>
+                    </template>
+                    export trees
                 </Popover>
             </div>
             <div class="flex-1 overflow-auto">
@@ -95,7 +109,8 @@ function reorderTree(i, j) {
                 </template>
             </div>
         </div>
-        <BioTreeStudio v-model:config="current_tree" ref="tree-ref" />
-        <TreeWizard v-model:open="show_wizard" @load="loadtree" ref="wizard" />
+        <BioTreeStudio v-model:config="current_tree" ref="tree-ref" @load="loadtree" />
+        <TreeImportWizard v-model:open="show_import_wizard" @load="loadtree" />
+        <TreeExportWizard v-model:open="show_export_wizard" :trees="tree_data" />
     </div>
 </template>

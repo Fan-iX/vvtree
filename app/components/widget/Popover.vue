@@ -226,7 +226,7 @@ const scope = ref({
 })
 const className = computed(() => [
     "fixed max-w-full overflow-auto bg-white border border-gray-300 z-40",
-    variant == "tooltip" ? "px-2 py-1 rounded-lg text-sm text-current/75 pointer-events-none" : "",
+    variant == "tooltip" ? "px-2 py-1 rounded-lg text-sm text-current/75 pointer-events-none font-normal" : "",
     variant == "contextmenu" ? "py-1 rounded-xl flex flex-col" : "",
     variant == null && inline ? "px-2 rounded-lg" : "",
     variant == null && !inline ? "p-4 rounded-xl" : "",
