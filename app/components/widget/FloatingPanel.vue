@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch, nextTick, useTemplateRef } from 'vue'
+import { computed, watch, nextTick, useTemplateRef, inject, ref } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 defineOptions({ inheritAttrs: false })
 const { title, contentClass } = defineProps({
@@ -12,15 +12,18 @@ const left = defineModel('left', { type: Number, default: 20 })
 const width = defineModel('width', { type: Number, default: 200 })
 const height = defineModel('height', { type: Number, default: 200 })
 const className = computed(() => [
-    "fixed bg-white rounded-lg z-30 border border-gray-300 shadow-lg overflow-auto flex flex-col outline-none",
+    "fixed bg-white rounded-lg border border-gray-300 shadow-lg overflow-auto flex flex-col outline-none pointer-events-auto",
     fold.value ? "resize-x" : "resize",
 ])
 watch(open, v => nextTick(() => { if (v) panel.value.focus() }))
+const zMax = inject('panel-z-max', ref(0))
+const zIndex = ref(zMax?.value ?? 0)
 const style = computed(() => ({
     left: left.value != null ? left.value + "px" : null,
     top: top.value != null ? top.value + "px" : null,
     width: width.value != null ? width.value + "px" : null,
     height: !fold.value && height.value != null ? height.value + "px" : null,
+    'z-index': zIndex.value,
 }))
 const panel = useTemplateRef('panel')
 function onpointerdown(e) {
@@ -53,8 +56,8 @@ function hide() {
 }
 </script>
 <template>
-    <Teleport to="body" v-if="open">
-        <div :class="className" v-bind="$attrs" :style ref="panel" v-tw-merge tabindex="-1">
+    <Teleport to="#panel-container" v-if="open">
+        <div :class="className" v-bind="$attrs" :style ref="panel" @focus="zIndex = ++zMax" tabindex="-1" v-tw-merge>
             <div ref="header" class="px-2 py-1 cursor-move border-b border-gray-400" @pointerdown="onpointerdown">
                 <slot name="caption">
                     <div class="flex items-center justify-between">

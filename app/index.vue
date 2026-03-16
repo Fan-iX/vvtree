@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, provide } from 'vue'
 import BioTreeStudio from './components/TreeStudio.vue'
 import WidgetDragList from './components/widget/DragList.vue'
 import Popover from './components/widget/Popover.vue'
@@ -7,6 +7,7 @@ import TreeImportWizard from './components/TreeImportWizard.vue'
 import TreeExportWizard from './components/TreeExportWizard.vue'
 
 import { useLocalStorage } from '@vueuse/core'
+provide('panel-z-max', ref(0))
 const treeRef = useTemplateRef('tree-ref')
 
 const tree_data = useLocalStorage('tree-studio-storage', [{
@@ -81,7 +82,7 @@ function reorderTree(i, j) {
                     <template #trigger>
                         <button class="align-middle hover:text-blue-500 cursor-pointer"
                             @click="show_export_wizard = !show_export_wizard">
-                            <Icon icon="lucide:clipboard-copy"  class="-scale-x-100"/>
+                            <Icon icon="lucide:clipboard-copy" class="-scale-x-100" />
                         </button>
                     </template>
                     export trees
