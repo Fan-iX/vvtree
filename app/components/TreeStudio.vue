@@ -127,6 +127,7 @@ const vBind = computed(() => {
         'align-tooltip': config.value.display[layout]?.align_tooltip,
         'branch-length': config.value.display[layout]?.branch_length,
         'label-offset': config.value.display[layout]?.label_offset,
+        'tip-extension': config.value.display[layout]?.tip_extension,
         theme: {
             plot: {
                 margin: config.value.display[layout]?.margin ?? undefined,
@@ -244,11 +245,20 @@ async function openAsPdf(svgXml) {
                             <option value="rectangular">rectangular</option>
                             <option value="unrooted">unrooted</option>
                         </select>
-                        <label class="col-span-full">
+                        <div class="col-span-full">
+                            tip extension:
+                            <WInput type="number" v-model.number="config.display[config.layout].tip_extension"
+                                :step="0.01" class="w-[5ch]" placeholder="0" />
+                            <Icon icon="lucide:x" @click="delete config.display[config.layout].tip_extension"
+                                class="inline-block align-middle hover:text-red-500 cursor-pointer" />
+                        </div>
+                        <div class="col-span-full">
                             label offset:
                             <WInput type="number" v-model.number="config.display[config.layout].label_offset" :step="1"
-                                class="w-[6ch]" placeholder="6" />
-                        </label>
+                                class="w-[4ch]" placeholder="6" />
+                            <Icon icon="lucide:x" @click="delete config.display[config.layout].label_offset"
+                                class="inline-block align-middle hover:text-red-500 cursor-pointer" />
+                        </div>
                         <label>
                             <input type="checkbox" v-model="config.display[config.layout].branch_length">branch length
                         </label>

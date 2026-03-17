@@ -8,7 +8,7 @@ const {
     branchLength, timeScale,
     color, pointSize, textSize, branchWidth, linetype,
     layout, theme: $theme, resize,
-    alignTooltip, labelOffset
+    alignTooltip, labelOffset, tipExtension,
 } = defineProps({
     branchLength: { type: Boolean, default: true },
     timeScale: Boolean,
@@ -20,6 +20,7 @@ const {
     layout: { type: String, default: 'rectangular' },
     alignTooltip: Boolean,
     labelOffset: { type: Number, default: 6 },
+    tipExtension: { type: Number, default: 0 },
     theme: null, resize: null,
 })
 const tree = defineModel("tree", { type: VVTreeNode })
@@ -27,7 +28,10 @@ const tree = defineModel("tree", { type: VVTreeNode })
 const nodes = computed(() => tree.value?._allNodes ?? [])
 const branchNodes = computed(() => nodes.value.filter(d => !d.isRoot))
 const tipNodes = computed(() => nodes.value.filter(d => d.isTip).reverse())
-const tipX = computed(() => nodes.value.reduce((a, d) => Math.max(a, d.$rectangular.x), 0))
+const treeHeight = computed(() => tree.value?.height ?? 0)
+const tipX = computed(() => nodes.value.reduce((a, d) => Math.max(a, d.$rectangular.x), 0) + treeHeight.value * tipExtension)
+const fn_unroot_tip_x = d => d.$unrooted.x + (d.isTip ? treeHeight.value * tipExtension * Math.cos(d.$unrooted.theta) : 0)
+const fn_unroot_tip_y = d => d.$unrooted.y + (d.isTip ? treeHeight.value * tipExtension * Math.sin(d.$unrooted.theta) : 0)
 
 const emit = defineEmits(["nodeclick", "linkclick"])
 
@@ -99,14 +103,14 @@ const fn_points = d => [{ x: d.$rectangular.x, y: d.$rectangular.y }, { x: d.par
             <VVGeomMarkdown :data="tipNodes" :x="alignTooltip ? tipX : d => d.$rectangular.x" :y="d => d.$rectangular.y"
                 :label="fn_text_label" :color="fn_text_color" :size="fn_text_size" :anchor-x="0"
                 :translate-x="labelOffset" />
+            <VVGeomSegment v-if="alignTooltip" :data="tipNodes" :x="tipX" :y="d => d.$rectangular.y"
+                :xend="d => d.$rectangular.x" :color="fn_branch_color" :linewidth="fn_branch_width" linetype="dashed" />
             <VVGeomPoint :data="nodes" :x="d => d.$rectangular.x" :y="d => d.$rectangular.y" :size="fn_point_size"
                 :color="fn_point_color" :shape="fn_point_shape" @click="nodeclick" @contextmenu="nodeclick"
                 class="cursor-pointer" render="svg" />
             <VVGeomPoint :data="nodes" :x="d => d.$rectangular.x" :y="d => d.$rectangular.y" color="transparent"
                 @click="nodeclick" @contextmenu="nodeclick" :size="6" class="cursor-pointer vvplot-interactive"
                 render="svg" />
-            <VVGeomSegment v-if="alignTooltip" :data="tipNodes" :x="d => d.$rectangular.x" :y="d => d.$rectangular.y"
-                :xend="tipX" :color="fn_branch_color" :linewidth="fn_branch_width" linetype="dashed" />
         </template>
         <template v-if="layout == 'unrooted'">
             <VVGeomSegment :data="branchNodes" :x="d => d.$unrooted.x" :y="d => d.$unrooted.y"
@@ -115,10 +119,12 @@ const fn_points = d => [{ x: d.$rectangular.x, y: d.$rectangular.y }, { x: d.par
             <VVGeomSegment :data="branchNodes" :x="d => d.$unrooted.x" :y="d => d.$unrooted.y"
                 :xend="d => d.parent.$unrooted.x" :yend="d => d.parent.$unrooted.y" color="transparent" :linewidth="10"
                 @click="linkclick" @contextmenu="linkclick" class="vvplot-interactive" />
-            <VVGeomMarkdownsegment :data="tipNodes" :xend="d => d.$unrooted.x" :yend="d => d.$unrooted.y"
-                :label="fn_text_label" :x="d => d.$unrooted.parent.$unrooted.x"
-                :y="d => d.$unrooted.parent.$unrooted.y" :color="fn_text_color" :size="fn_text_size" text-align="post"
-                :inset="labelOffset" />
+            <VVGeomMarkdownsegment :data="tipNodes" :xend="fn_unroot_tip_x" :yend="fn_unroot_tip_y"
+                :label="fn_text_label" :x="d => d.$unrooted.parent.$unrooted.x" :y="d => d.$unrooted.parent.$unrooted.y"
+                :color="fn_text_color" :size="fn_text_size" text-align="post" :inset="labelOffset" />
+            <VVGeomSegment v-if="tipExtension" :data="tipNodes" :x="fn_unroot_tip_x" :y="fn_unroot_tip_y"
+                :xend="d => d.$unrooted.x" :yend="d => d.$unrooted.y" :color="fn_branch_color"
+                :linewidth="fn_branch_width" linetype="dashed" />
             <VVGeomPoint :data="branchNodes" :x="d => d.$unrooted.x" :y="d => d.$unrooted.y" :size="fn_point_size"
                 :color="fn_point_color" @click="nodeclick" @contextmenu="nodeclick" class="cursor-pointer"
                 render="svg" />

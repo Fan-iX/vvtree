@@ -153,6 +153,7 @@ export class VVTreeNode extends TreeNode {
             let $node = node
             while (branch_length && $node.parent && !$node.branch_length) $node = $node.parent
             node.$unrooted.parent = $node.parent ?? node
+            node.$unrooted.theta = angle
 
             if (!node.isTip) {
                 let currentStart = start
