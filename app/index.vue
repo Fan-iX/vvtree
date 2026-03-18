@@ -37,9 +37,11 @@ function remove_tree(i) {
     idx.value = Math.min(idx.value, tree_data.value.length - 1)
 }
 function loadtree(trees) {
+    if (!trees?.length) return
     for (const tree of trees) {
         add_tree(tree)
     }
+    idx.value = 0
 }
 
 function reorderTree(i, j) {

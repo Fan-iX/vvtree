@@ -79,20 +79,25 @@ async function onpaste(e) {
 }
 async function oncopy(e) {
     e.preventDefault()
-    e.clipboardData.setData('text/plain', config.value.newick)
+    e.clipboardData.setData('text/plain', tree.value.toNewickString({ attribute: false }))
     e.clipboardData.setData('vvtree-tree-list', JSON.stringify([config.value]))
 }
-function copy() {
+function copy(e) {
     if (navigator.clipboard) {
         navigator.clipboard.write([
             new ClipboardItem({
-                "text/plain": config.value.newick,
+                "text/plain": tree.value.toNewickString({ attribute: false }),
                 "vvtree-tree-list": JSON.stringify([config.value]),
             })
         ])
     } else {
-        containerRef.value.focus()
+        const range = document.createRange()
+        range.selectNodeContents(e.currentTarget)
+        const selection = window.getSelection()
+        selection.removeAllRanges()
+        selection.addRange(range)
         document.execCommand('copy')
+        selection.removeAllRanges()
     }
 }
 
@@ -230,10 +235,42 @@ async function openAsPdf(svgXml) {
 </script>
 
 <template>
-    <div class="grid grid-rows-[10em_1fr] grid-cols-[1fr_clamp(18em,25%,20em)] flex-1 overflow-hidden gap-x-1">
-        <WTextarea v-model.lazy="config.data" class="text-sm border-2 border-gray-300 rounded-md" @change="buildTree"
-            placeholder="Paste newick string here" @paste="onpaste" />
-        <div class="overflow-auto row-span-2 flex flex-col gap-1">
+    <div class="flex flex-1 overflow-hidden gap-1">
+        <div class="flex-1 flex flex-col gap-1 overflow-auto">
+            <WTextarea v-model.lazy="config.data" class="text-sm border-2 border-gray-300 rounded-md min-h-40"
+                @change="buildTree" placeholder="Paste newick string here" @paste="onpaste" />
+            <div class="relative z-1">
+                <div class="absolute right-2 top-0 flex flex-row">
+                    <Popover inline variant="tooltip">
+                        <template #trigger>
+                            <button class="cursor-pointer text-xl rounded-md p-1 hover:bg-current/5"
+                                @click="tree = VVTreeNode.from(VVTreeNode.parseNewick(config.data))">
+                                <Icon icon="lucide:undo-2" />
+                            </button>
+                        </template>
+                        reset tree
+                    </Popover>
+                    <Popover inline variant="tooltip">
+                        <template #trigger>
+                            <button class="cursor-pointer text-xl rounded-md p-1 hover:bg-current/5" @click="copy"
+                                @copy="oncopy">
+                                <Icon icon="lucide:clipboard" />
+                                <div class="sr-only">copy</div>
+                            </button>
+                        </template>
+                        copy tree to clipboard
+                    </Popover>
+                </div>
+            </div>
+            <div class="overflow-auto flex-1" ref="container" @paste="onpaste" @copy="oncopy" tabindex="-1">
+                <div :style="{ transform: `scale(${zoom_scale})` }" class="origin-top-left w-max h-max">
+                    <BioTree ref="biotree" v-model:tree="tree" v-model:width="config.display[config.layout].width"
+                        v-model:height="config.display[config.layout].height" v-bind="vBind" @wheel="onWheel"
+                        @nodeclick.prevent="onNodeClick" resize />
+                </div>
+            </div>
+        </div>
+        <div class="overflow-auto row-span-2 flex flex-col gap-1 w-80">
             <WDetails open summary-class="bg-current/10">
                 <template #summary>plot settings</template>
                 <div class="flex flex-col ml-4 whitespace-nowrap w-min">
@@ -526,32 +563,6 @@ async function openAsPdf(svgXml) {
                     </Popover>
                 </div>
             </WDetails>
-        </div>
-        <div class="overflow-auto relative" ref="container" @paste="onpaste" @copy="oncopy" tabindex="-1">
-            <div :style="{ transform: `scale(${zoom_scale})` }" class="origin-top-left w-max h-max">
-                <BioTree ref="biotree" v-model:tree="tree" v-model:width="config.display[config.layout].width"
-                    v-model:height="config.display[config.layout].height" v-bind="vBind" @wheel="onWheel"
-                    @nodeclick.prevent="onNodeClick" resize />
-            </div>
-            <div class="absolute right-2 top-0 flex flex-row">
-                <Popover inline variant="tooltip">
-                    <template #trigger>
-                        <button class="cursor-pointer text-xl rounded-md p-1 hover:bg-current/5"
-                            @click="tree = VVTreeNode.from(VVTreeNode.parseNewick(config.data))">
-                            <Icon icon="lucide:undo-2" />
-                        </button>
-                    </template>
-                    reset tree
-                </Popover>
-                <Popover inline variant="tooltip">
-                    <template #trigger>
-                        <button class="cursor-pointer text-xl rounded-md p-1 hover:bg-current/5" @click="copy">
-                            <Icon icon="lucide:clipboard" />
-                        </button>
-                    </template>
-                    copy tree to clipboard
-                </Popover>
-            </div>
         </div>
         <AestheticsWizard :config="config.aesthetics" v-model:tab="aes_panel_tab" @apply="applyAesthetics"
             @clear="resetAesthetics" />

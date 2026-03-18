@@ -70,9 +70,7 @@ async function onNodeClick(e, c, d) {
     if (e.button == 2) {
         e.preventDefault()
         activeNode.value = d
-        console.log(2)
         let action = await nodeMenu.value.show(d)
-        console.log(1)
         if (action == 'reroot') {
             emit('change', tree.value = TreeNode.reroot(d))
         } else if (action == 'cutout') {
