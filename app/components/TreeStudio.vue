@@ -159,8 +159,8 @@ const stat = computed(() => {
 
 const nodeInfo = computed(() => {
     if (!activeNode.value) return null
-    let depth = config.value.branch_length ? activeNode.value.depth : activeNode.value.step_depth
-    let height = config.value.branch_length ? activeNode.value.height : activeNode.value.step_height
+    let depth = config.value.display[config.value.layout].branch_length ? activeNode.value.depth : activeNode.value.step_depth
+    let height = config.value.display[config.value.layout].branch_length ? activeNode.value.height : activeNode.value.step_height
     return {
         name: activeNode.value.name,
         label: activeNode.value.label ?? activeNode.value.name,
@@ -168,7 +168,7 @@ const nodeInfo = computed(() => {
         'depth%': depth / (depth + height) * 100 || 0,
         annotation: activeNode.value.annotations,
     }
-})
+}, { deep: true })
 function onNodeClick(e, c, d) {
     activeNode.value = d
 }
@@ -267,7 +267,7 @@ async function openAsPdf(svgXml) {
                 <div :style="{ transform: `scale(${zoom_scale})` }" class="origin-top-left w-max h-max">
                     <BioTree ref="biotree" v-model:tree="tree" v-model:width="config.display[config.layout].width"
                         v-model:height="config.display[config.layout].height" v-bind="vBind" @wheel="onWheel"
-                        @nodeclick.prevent="onNodeClick" resize />
+                        @nodeclick.prevent="onNodeClick" resize class="min-w-5 min-h-5" />
                 </div>
             </div>
         </div>
@@ -282,6 +282,7 @@ async function openAsPdf(svgXml) {
                             class="appearance-none min-w-[1ex] field-sizing-content bg-transparent border-b">
                             <option value="rectangular">rectangular</option>
                             <option value="unrooted">unrooted</option>
+                            <option value="circular">circular</option>
                         </select>
                         <div class="col-span-full">
                             tip extension:
@@ -303,12 +304,11 @@ async function openAsPdf(svgXml) {
                         <label>
                             <input type="checkbox" v-model="config.display[config.layout].time_scale">time scale
                         </label>
-                        <label v-if="config.layout == 'rectangular'">
+                        <label v-if="config.layout == 'rectangular' || config.layout == 'circular'">
                             <input type="checkbox" v-model="config.display[config.layout].align_tooltip">align tooltip
                         </label>
-                        <label v-if="config.layout == 'unrooted'">
-                            <input type="checkbox" v-model="config.display[config.layout].reverse_labels">auto reverse
-                            labels
+                        <label v-if="config.layout == 'unrooted' || config.layout == 'circular'">
+                            <input type="checkbox" v-model="config.display[config.layout].reverse_labels">reverse label
                         </label>
                     </div>
                     plot size

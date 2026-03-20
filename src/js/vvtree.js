@@ -96,6 +96,7 @@ export class VVTreeNode extends TreeNode {
         this.attributes = Object.assign({}, attributes)
         this.$rectangular = {} // pre-rendered layout info for rectangular layout
         this.$unrooted = {} // pre-rendered layout info for unrooted layout
+        this.$circular = {} // pre-rendered layout info for circular layout
     }
 
     get _isTip() {
@@ -130,6 +131,35 @@ export class VVTreeNode extends TreeNode {
                 node.children.forEach(c => assignCoordinates(c))
                 node.$rectangular.x = node.children.reduce((v, c) => Math.min(v, c.$rectangular.x), 0) - 1
                 node.$rectangular.y = (node.children[0].$rectangular.y + node.children[node.children.length - 1].$rectangular.y) / 2
+            }
+        }
+
+        assignCoordinates(root)
+    }
+
+    prerenderCircular({ branch_length = true } = {}) {
+        let root = this.root
+        if (root._allChildren.every(x => x.branch_length == null)) branch_length = false
+        root._allTips.forEach((x, i, { length }) => x.$circular.t = (i + 0.5) / length)
+        let maxR = root.step_height
+
+        function assignCoordinates(node) {
+            let $node = node
+            while (branch_length && $node.parent && !$node.branch_length) $node = $node.parent
+            node.$circular.parent = $node.parent ?? node
+            if (branch_length) {
+                node.$circular.r = node.parent == null ? 0 : node.parent.$circular.r + (node.branch_length ?? 0)
+                if (node._isTip) return
+                node.children.forEach(c => assignCoordinates(c))
+                node.$circular.t = (node.children[0].$circular.t + node.children[node.children.length - 1].$circular.t) / 2
+            } else {
+                if (node._isTip) {
+                    node.$circular.r = maxR
+                    return
+                }
+                node.children.forEach(c => assignCoordinates(c))
+                node.$circular.r = node.children.reduce((v, c) => Math.min(v, c.$circular.r), maxR) - 1
+                node.$circular.t = (node.children[0].$circular.t + node.children[node.children.length - 1].$circular.t) / 2
             }
         }
 
@@ -174,6 +204,7 @@ export class VVTreeNode extends TreeNode {
     prerender({ layout = 'rectangular', ...opts } = {}) {
         if (layout === 'unrooted') this.prerenderUnrooted(opts)
         if (layout === 'rectangular') this.prerenderRectangular(opts)
+        if (layout === 'circular') this.prerenderCircular(opts)
     }
 
     toNewickString(config = {}) {

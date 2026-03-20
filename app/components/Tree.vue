@@ -23,6 +23,11 @@ async function onLinkClick(e, c, d) {
                 let d0 = d.$rectangular, d1 = d.parent.$rectangular
                 let ratio = (c.x - d0.x) / (d1.x - d0.x)
                 emit('change', tree.value = TreeNode.reroot(d, ratio))
+            } else if (layout == "circular") {
+                let d0 = d.$circular, d1 = d.parent.$circular
+                let r = Math.hypot(c.x, c.y)
+                let ratio = (r - d0.r) / (d1.r - d0.r)
+                emit('change', tree.value = TreeNode.reroot(d, ratio))
             } else if (layout == "unrooted") {
                 let d0 = d.$unrooted, d1 = d.parent.$unrooted
                 let ratio = Math.hypot(c.x - d0.x, c.y - d0.y) / Math.hypot(d1.x - d0.x, d1.y - d0.y)

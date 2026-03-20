@@ -13,7 +13,8 @@ const treeRef = useTemplateRef('tree-ref')
 const tree_data = useLocalStorage('tree-studio-storage', [{
     name: "New tree", data: "", layout: 'rectangular', display: {
         rectangular: { margin_left: 5, margin_right: 120, branch_length: true, },
-        unrooted: { margin: 120, branch_length: true, }
+        unrooted: { margin: 120, branch_length: true, reverse_labels: true },
+        circular: { margin: 120, branch_length: true, reverse_labels: true },
     },
 }])
 const idx = ref(0)
