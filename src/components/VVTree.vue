@@ -7,7 +7,7 @@ import { VVPlot, VVAxisX, VVAxisY, VVGeomCurve, VVGeomSegment, VVGeomMarkdown, V
 const {
     branchLength, timeScale,
     color, pointSize, textSize, branchWidth, linetype,
-    layout, theme: $theme, resize,
+    layout, theme: $theme, resize, reverseLabels,
     alignTooltip, labelOffset, tipExtension,
 } = defineProps({
     branchLength: { type: Boolean, default: true },
@@ -19,6 +19,7 @@ const {
     linetype: { type: String, default: 'solid' },
     layout: { type: String, default: 'rectangular' },
     alignTooltip: Boolean,
+    reverseLabels: Boolean,
     labelOffset: { type: Number, default: 6 },
     tipExtension: { type: Number, default: 0 },
     theme: null, resize: null,
@@ -32,6 +33,26 @@ const treeHeight = computed(() => tree.value?.height ?? 0)
 const tipX = computed(() => nodes.value.reduce((a, d) => Math.max(a, d.$rectangular.x), 0) + treeHeight.value * tipExtension)
 const fn_unroot_tip_x = d => d.$unrooted.x + (d.isTip ? treeHeight.value * tipExtension * Math.cos(d.$unrooted.theta) : 0)
 const fn_unroot_tip_y = d => d.$unrooted.y + (d.isTip ? treeHeight.value * tipExtension * Math.sin(d.$unrooted.theta) : 0)
+const unroot_label_vbind = computed(() => {
+    if (reverseLabels) {
+        function isRev(theta) { return theta > Math.PI / 2 && theta < 3 * Math.PI / 2 }
+        return {
+            x: d => isRev(d.$unrooted.theta) ? fn_unroot_tip_x(d) : d.$unrooted.parent.$unrooted.x,
+            y: d => isRev(d.$unrooted.theta) ? fn_unroot_tip_y(d) : d.$unrooted.parent.$unrooted.y,
+            xend: d => isRev(d.$unrooted.theta) ? d.$unrooted.parent.$unrooted.x : fn_unroot_tip_x(d),
+            yend: d => isRev(d.$unrooted.theta) ? d.$unrooted.parent.$unrooted.y : fn_unroot_tip_y(d),
+            'text-align': d => isRev(d.$unrooted.theta) ? 'pre' : 'post'
+        }
+    } else {
+        return {
+            x: d => d.$unrooted.parent.$unrooted.x,
+            y: d => d.$unrooted.parent.$unrooted.y,
+            xend: fn_unroot_tip_x,
+            yend: fn_unroot_tip_y,
+            'text-align': 'post'
+        }
+    }
+})
 
 const emit = defineEmits(["nodeclick", "linkclick"])
 
@@ -119,9 +140,8 @@ const fn_points = d => [{ x: d.$rectangular.x, y: d.$rectangular.y }, { x: d.par
             <VVGeomSegment :data="branchNodes" :x="d => d.$unrooted.x" :y="d => d.$unrooted.y"
                 :xend="d => d.parent.$unrooted.x" :yend="d => d.parent.$unrooted.y" color="transparent" :linewidth="10"
                 @click="linkclick" @contextmenu="linkclick" class="vvplot-interactive" />
-            <VVGeomMarkdownsegment :data="tipNodes" :xend="fn_unroot_tip_x" :yend="fn_unroot_tip_y"
-                :label="fn_text_label" :x="d => d.$unrooted.parent.$unrooted.x" :y="d => d.$unrooted.parent.$unrooted.y"
-                :color="fn_text_color" :size="fn_text_size" text-align="post" :inset="labelOffset" />
+            <VVGeomMarkdownsegment :data="tipNodes" :label="fn_text_label" :color="fn_text_color" :size="fn_text_size"
+                v-bind="unroot_label_vbind" :inset="labelOffset" />
             <VVGeomSegment v-if="tipExtension" :data="tipNodes" :x="fn_unroot_tip_x" :y="fn_unroot_tip_y"
                 :xend="d => d.$unrooted.x" :yend="d => d.$unrooted.y" :color="fn_branch_color"
                 :linewidth="fn_branch_width" linetype="dashed" />

@@ -39,21 +39,23 @@ function copy() {
         <div class="flex-1 overflow-auto">
             <table
                 class="border-collapse [&_th]:border [&_th]:border-slate-300 [&_td]:border [&_td]:border-slate-300 whitespace-nowrap w-full">
-                <tr>
-                    <th class="min-w-4">
-                        <input type="checkbox" @change="checkAll($event.target.checked)"
-                            :indeterminate="selected.every(x => x) && !selected.some(x => !x)">
-                    </th>
-                    <th class="px-2">Name</th>
-                    <th class="w-full">Tree</th>
-                </tr>
-                <tr v-for="tree, i in trees">
-                    <td class="text-center">
-                        <input type="checkbox" v-model="selected[i]">
-                    </td>
-                    <td>{{ tree.name }}</td>
-                    <td class="font-mono overflow-x-auto max-w-[40ch]">{{ tree.data }}</td>
-                </tr>
+                <tbody>
+                    <tr>
+                        <th class="min-w-4">
+                            <input type="checkbox" @change="checkAll($event.target.checked)"
+                                :indeterminate="selected.every(x => x) && !selected.some(x => !x)">
+                        </th>
+                        <th class="px-2">Name</th>
+                        <th class="w-full">Tree</th>
+                    </tr>
+                    <tr v-for="tree, i in trees">
+                        <td class="text-center">
+                            <input type="checkbox" v-model="selected[i]">
+                        </td>
+                        <td>{{ tree.name }}</td>
+                        <td class="font-mono overflow-x-auto max-w-[40ch]">{{ tree.data }}</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
         <div class="flex flex-row-reverse">

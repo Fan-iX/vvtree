@@ -133,6 +133,7 @@ const vBind = computed(() => {
         'branch-length': config.value.display[layout]?.branch_length,
         'label-offset': config.value.display[layout]?.label_offset,
         'tip-extension': config.value.display[layout]?.tip_extension,
+        'reverse-labels': config.value.display[layout]?.reverse_labels,
         theme: {
             plot: {
                 margin: config.value.display[layout]?.margin ?? undefined,
@@ -304,6 +305,10 @@ async function openAsPdf(svgXml) {
                         </label>
                         <label v-if="config.layout == 'rectangular'">
                             <input type="checkbox" v-model="config.display[config.layout].align_tooltip">align tooltip
+                        </label>
+                        <label v-if="config.layout == 'unrooted'">
+                            <input type="checkbox" v-model="config.display[config.layout].reverse_labels">auto reverse
+                            labels
                         </label>
                     </div>
                     plot size

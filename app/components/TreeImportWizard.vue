@@ -82,39 +82,44 @@ function apply() {
         <div class="flex-1 overflow-auto">
             <table
                 class="border-collapse [&_th]:border [&_th]:border-slate-300 [&_td]:border [&_td]:border-slate-300 whitespace-nowrap w-full">
-                <tr>
-                    <th class="min-w-4"></th>
-                    <th class="px-2">Name</th>
-                    <th class="px-2">Format</th>
-                    <th class="px-2">
-                        <input type="checkbox" @change="checkAll($event.currentTarget.checked)"> Translate
-                        <Popover inline variant="tooltip">
-                            <template #trigger>
-                                <Icon icon="lucide:circle-question-mark"
-                                    class="text-blue-500 text-lg cursor-help inline-block" />
-                            </template>
-                            apply nexus translation block to tip labels
-                        </Popover>
-                    </th>
-                    <th class="w-full">Tree</th>
-                </tr>
-                <tr v-for="tree, i in trees">
-                    <td>
-                        <Icon icon="lucide:x" @click="trees.splice(i, 1)" class="hover:text-red-500 cursor-pointer" />
-                    </td>
-                    <td><input type="text" v-model="tree.name" class="outline-none field-sizing-content border-b"></td>
-                    <td>{{ tree.format }}</td>
-                    <td class="text-center">
-                        <Popover side="right" inline variant="tooltip" v-if="tree.translation">
-                            <template #trigger>
-                                <input type="checkbox" v-model="tree.translate" class="align-middle">
-                            </template>
-                            <pre>{{Object.entries(tree.translation).map(x => x.join('\t')).join('\n') || '<no translation>'}}</pre>
-                        </Popover>
-                    </td>
-                    <td class="font-mono overflow-x-auto max-w-[40ch]">{{ tree.translate ? tree.newick2 : tree.newick }}
-                    </td>
-                </tr>
+                <tbody>
+                    <tr>
+                        <th class="min-w-4"></th>
+                        <th class="px-2">Name</th>
+                        <th class="px-2">Format</th>
+                        <th class="px-2">
+                            <input type="checkbox" @change="checkAll($event.currentTarget.checked)"> Translate
+                            <Popover inline variant="tooltip">
+                                <template #trigger>
+                                    <Icon icon="lucide:circle-question-mark"
+                                        class="text-blue-500 text-lg cursor-help inline-block" />
+                                </template>
+                                apply nexus translation block to tip labels
+                            </Popover>
+                        </th>
+                        <th class="w-full">Tree</th>
+                    </tr>
+                    <tr v-for="tree, i in trees">
+                        <td>
+                            <Icon icon="lucide:x" @click="trees.splice(i, 1)"
+                                class="hover:text-red-500 cursor-pointer" />
+                        </td>
+                        <td><input type="text" v-model="tree.name" class="outline-none field-sizing-content border-b">
+                        </td>
+                        <td>{{ tree.format }}</td>
+                        <td class="text-center">
+                            <Popover side="right" inline variant="tooltip" v-if="tree.translation">
+                                <template #trigger>
+                                    <input type="checkbox" v-model="tree.translate" class="align-middle">
+                                </template>
+                                <pre>{{Object.entries(tree.translation).map(x => x.join('\t')).join('\n') || '<no translation>'}}</pre>
+                            </Popover>
+                        </td>
+                        <td class="font-mono overflow-x-auto max-w-[40ch]">{{ tree.translate ? tree.newick2 :
+                            tree.newick }}
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
         <div class="flex flex-row-reverse">
