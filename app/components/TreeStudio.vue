@@ -83,22 +83,13 @@ async function oncopy(e) {
     e.clipboardData.setData('vvtree-tree-list', JSON.stringify([config.value]))
 }
 function copy(e) {
-    if (navigator.clipboard) {
-        navigator.clipboard.write([
-            new ClipboardItem({
-                "text/plain": tree.value.toNewickString({ attribute: false }),
-                "vvtree-tree-list": JSON.stringify([config.value]),
-            })
-        ])
-    } else {
-        const range = document.createRange()
-        range.selectNodeContents(e.currentTarget)
-        const selection = window.getSelection()
-        selection.removeAllRanges()
-        selection.addRange(range)
-        document.execCommand('copy')
-        selection.removeAllRanges()
-    }
+    const range = document.createRange()
+    range.selectNodeContents(e.currentTarget)
+    const selection = window.getSelection()
+    selection.removeAllRanges()
+    selection.addRange(range)
+    document.execCommand('copy')
+    selection.removeAllRanges()
 }
 
 function onWheel(e) {
