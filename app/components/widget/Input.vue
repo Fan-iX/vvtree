@@ -1,9 +1,13 @@
 <script setup>
 import { computed } from 'vue'
-const { modelValue, value, variant, coalesce, placeholder, modelModifiers } = defineProps({
+const {
+    modelValue, value, variant, coalesce, placeholder, modelModifiers,
+    step, min, max,
+} = defineProps({
     modelValue: null, value: null, coalesce: null, placeholder: null,
     modelModifiers: { default: () => ({}) },
     variant: { type: String, default: "underline" },
+    step: null, min: null, max: null,
 })
 const emit = defineEmits(['update:modelValue'])
 const className = computed(() => [
@@ -35,6 +39,17 @@ function oninput(e) {
     if (Number.isNaN(val)) val = coalesce
     emit('update:modelValue', val)
 }
+function onwheel(e) {
+    if (step) {
+        e.preventDefault()
+        let val = modelValue ?? value ?? +(placeholder ?? 0)
+        val += step * -Math.sign(e.deltaY)
+        if (modelModifiers.int) val = Math.round(val)
+        if (val < min) val = min
+        if (val > max) val = max
+        if (!isNaN(val)) emit('update:modelValue', val)
+    }
+}
 const model = computed({
     get() {
         let val = modelValue ?? value
@@ -45,6 +60,6 @@ const model = computed({
 })
 </script>
 <template>
-    <input :class="className" v-model="model" @input="oninput" @change="onchange" @focus="onfocus"
-        :placeholder="placeholder" v-tw-merge />
+    <input :class="className" v-model="model" @input="oninput" @change="onchange" @wheel="onwheel" @focus="onfocus"
+        :placeholder="placeholder" :step="step" :min="min" :max="max" v-tw-merge />
 </template>

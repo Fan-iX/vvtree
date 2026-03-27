@@ -62,7 +62,7 @@ function saveAesthetic(aes, funcText) {
 
 function buildmap() {
     let map = {}
-    for (let line of valuemap.value.split("\n")) {
+    for (let line of valuemap.value.trim().split("\n")) {
         let [node, val] = line.split(/\t/)
         if (!isNaN(val)) val = +val
         else if (val.toLowerCase() == "null") val = null

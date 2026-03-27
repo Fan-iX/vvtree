@@ -258,7 +258,7 @@ async function openAsPdf(svgXml) {
                 <div :style="{ transform: `scale(${zoom_scale})` }" class="origin-top-left w-max h-max">
                     <BioTree ref="biotree" v-model:tree="tree" v-model:width="config.display[config.layout].width"
                         v-model:height="config.display[config.layout].height" v-bind="vBind" @wheel="onWheel"
-                        @nodeclick.prevent="onNodeClick" resize class="min-w-5 min-h-5" />
+                        @nodeclick.prevent="onNodeClick" resize />
                 </div>
             </div>
         </div>
