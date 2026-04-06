@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, useTemplateRef, provide } from 'vue'
-import BioTreeStudio from './components/TreeStudio.vue'
+import TreeStudio from './components/TreeStudio.vue'
 import WidgetDragList from './components/widget/DragList.vue'
 import Popover from './components/widget/Popover.vue'
 import TreeImportWizard from './components/TreeImportWizard.vue'
@@ -113,7 +113,7 @@ function reorderTree(i, j) {
                 </template>
             </div>
         </div>
-        <BioTreeStudio v-model:config="current_tree" ref="tree-ref" @load="loadtree" />
+        <TreeStudio v-model:config="current_tree" ref="tree-ref" @load="loadtree" />
         <TreeImportWizard v-model:open="show_import_wizard" @load="loadtree" />
         <TreeExportWizard v-model:open="show_export_wizard" :trees="tree_data" />
     </div>

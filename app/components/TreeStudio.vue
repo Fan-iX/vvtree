@@ -9,7 +9,7 @@ import WCheckInput from './widget/CheckInput.vue'
 import Popover from './widget/Popover.vue'
 import AestheticsWizard from './AestheticsWizard.vue'
 import AttributeInput from './AttributeInput.vue'
-import BioTree from './Tree.vue'
+import Tree from './Tree.vue'
 const emit = defineEmits(['load'])
 
 import { downloadContent, openContentWindow, palettes, svg2png, svg2pdf, svg2svg } from '../js/utils.js'
@@ -136,7 +136,7 @@ const vBind = computed(() => {
         }
     }
 })
-const biotree = useTemplateRef('biotree')
+const treeRef = useTemplateRef('tree-ref')
 
 const stat = computed(() => {
     let t = tree.value
@@ -256,7 +256,7 @@ async function openAsPdf(svgXml) {
             </div>
             <div class="overflow-auto flex-1" ref="container" @paste="onpaste" @copy="oncopy" tabindex="-1">
                 <div :style="{ transform: `scale(${zoom_scale})` }" class="origin-top-left w-max h-max">
-                    <BioTree ref="biotree" v-model:tree="tree" v-model:width="config.display[config.layout].width"
+                    <Tree ref="tree-ref" v-model:tree="tree" v-model:width="config.display[config.layout].width"
                         v-model:height="config.display[config.layout].height" v-bind="vBind" @wheel="onWheel"
                         @nodeclick.prevent="onNodeClick" resize />
                 </div>
@@ -484,7 +484,7 @@ async function openAsPdf(svgXml) {
                     <Popover inline variant="tooltip" side="top" :open-delay="0" class="whitespace-nowrap">
                         <template #trigger>
                             <button class="cursor-pointer inline rounded-md px-2 py-1 hover:bg-current/5 rounded-r-none"
-                                @click="downloadAsSvg(biotree.plot.serialize(), { filename: `${config?.name ?? 'tree'}.svg` })">
+                                @click="downloadAsSvg(treeRef.plot.serialize(), { filename: `${config?.name ?? 'tree'}.svg` })">
                                 <Icon icon="lucide:download" class="text-xl inline-block align-middle" />SVG
                             </button>
                         </template>
@@ -498,7 +498,7 @@ async function openAsPdf(svgXml) {
                             </button>
                         </template>
                         <div class="flex flex-col">
-                            <button @click="openAsSvg(biotree.plot.serialize())" class="px-2 py-1 hover:bg-current/5">
+                            <button @click="openAsSvg(treeRef.plot.serialize())" class="px-2 py-1 hover:bg-current/5">
                                 <Icon icon="lucide:square-arrow-out-up-right"
                                     class="text-xl inline-block align-middle" />
                                 open in new tab
@@ -510,7 +510,7 @@ async function openAsPdf(svgXml) {
                     <Popover inline variant="tooltip" side="top" :open-delay="0" class="whitespace-nowrap">
                         <template #trigger>
                             <button class="cursor-pointer inline rounded-md px-2 py-1 hover:bg-current/5 rounded-r-none"
-                                @click="downloadAsPng(biotree.plot.serialize(), { filename: `${config?.name ?? 'tree'}.png` })">
+                                @click="downloadAsPng(treeRef.plot.serialize(), { filename: `${config?.name ?? 'tree'}.png` })">
                                 <Icon icon="lucide:download" class="text-xl inline-block align-middle" />PNG
                             </button>
                         </template>
@@ -524,7 +524,7 @@ async function openAsPdf(svgXml) {
                             </button>
                         </template>
                         <div class="flex flex-col">
-                            <button @click="openAsPng(biotree.plot.serialize())" class="px-2 py-1 hover:bg-current/5">
+                            <button @click="openAsPng(treeRef.plot.serialize())" class="px-2 py-1 hover:bg-current/5">
                                 <Icon icon="lucide:square-arrow-out-up-right"
                                     class="text-xl inline-block align-middle" />
                                 open in new tab
@@ -536,7 +536,7 @@ async function openAsPdf(svgXml) {
                     <Popover inline variant="tooltip" side="top" :open-delay="0" class="whitespace-nowrap">
                         <template #trigger>
                             <button class="cursor-pointer inline rounded-md px-2 py-1 hover:bg-current/5 rounded-r-none"
-                                @click="downloadAsPdf(biotree.plot.serialize(), { filename: `${config?.name ?? 'tree'}.pdf` })">
+                                @click="downloadAsPdf(treeRef.plot.serialize(), { filename: `${config?.name ?? 'tree'}.pdf` })">
                                 <Icon icon="lucide:download" class="text-xl inline-block align-middle" />PDF
                             </button>
                         </template>
@@ -550,7 +550,7 @@ async function openAsPdf(svgXml) {
                             </button>
                         </template>
                         <div class="flex flex-col">
-                            <button @click="openAsPdf(biotree.plot.serialize())" class="px-2 py-1 hover:bg-current/5">
+                            <button @click="openAsPdf(treeRef.plot.serialize())" class="px-2 py-1 hover:bg-current/5">
                                 <Icon icon="lucide:square-arrow-out-up-right"
                                     class="text-xl inline-block align-middle" />
                                 open in new tab
