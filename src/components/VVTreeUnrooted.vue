@@ -7,7 +7,7 @@ import { VVPlot, VVAxisX, VVAxisY, VVGeomSegment, VVGeomPoint, VVGeomMarkdownseg
 const {
     branchLength, timeScale,
     color, pointSize, textSize, branchWidth, linetype, theme: $theme,
-    reverseLabels, labelOffset, tipExtension,
+    showNodeLabels, reverseLabels, labelOffset, tipExtension,
 } = defineProps({
     branchLength: { type: Boolean, default: true },
     timeScale: Boolean,
@@ -17,6 +17,7 @@ const {
     branchWidth: { type: Number, default: 1 },
     linetype: { type: String, default: 'solid' },
     theme: null,
+    showNodeLabels: Boolean,
     alignTooltip: Boolean,
     reverseLabels: Boolean,
     labelOffset: { type: Number, default: 6 },
@@ -28,12 +29,13 @@ const tree = defineModel("tree", { type: VVTreeNode })
 
 const nodes = computed(() => tree.value?._allNodes ?? [])
 const branchNodes = computed(() => nodes.value.filter(d => !d.isRoot))
+const intermediateNodes = computed(() => branchNodes.value.filter(d => !d.isTip))
 const tipNodes = computed(() => nodes.value.filter(d => d.isTip).reverse())
 const treeHeight = computed(() => branchLength ? tree.value?.height ?? 0 : tree.value.step_height ?? 0)
 const tipDelta = computed(() => treeHeight.value * tipExtension)
 
-const fn_tip_x = d => d.$unrooted.x + (d.isTip ? tipDelta.value * Math.cos(d.$unrooted.theta) : 0)
-const fn_tip_y = d => d.$unrooted.y + (d.isTip ? tipDelta.value * Math.sin(d.$unrooted.theta) : 0)
+const fn_tip_x = d => d.$unrooted.x + tipDelta.value * Math.cos(d.$unrooted.theta)
+const fn_tip_y = d => d.$unrooted.y + tipDelta.value * Math.sin(d.$unrooted.theta)
 const vbind_tip_label = computed(() => {
     if (reverseLabels) {
         function isRev(theta) { return theta > Math.PI / 2 && theta < 3 * Math.PI / 2 }
@@ -50,6 +52,26 @@ const vbind_tip_label = computed(() => {
             y: d => d.$unrooted.parent.$unrooted.y,
             xend: fn_tip_x,
             yend: fn_tip_y,
+            'text-align': 'post'
+        }
+    }
+})
+const vbind_node_label = computed(() => {
+    if (reverseLabels) {
+        function isRev(theta) { return theta > Math.PI / 2 && theta < 3 * Math.PI / 2 }
+        return {
+            x: d => isRev(d.$unrooted.theta) ? d.$unrooted.x : d.$unrooted.parent.$unrooted.x,
+            y: d => isRev(d.$unrooted.theta) ? d.$unrooted.y : d.$unrooted.parent.$unrooted.y,
+            xend: d => isRev(d.$unrooted.theta) ? d.$unrooted.parent.$unrooted.x : d.$unrooted.x,
+            yend: d => isRev(d.$unrooted.theta) ? d.$unrooted.parent.$unrooted.y : d.$unrooted.y,
+            'text-align': d => isRev(d.$unrooted.theta) ? 'pre' : 'post'
+        }
+    } else {
+        return {
+            x: d => d.$unrooted.parent.$unrooted.x,
+            y: d => d.$unrooted.parent.$unrooted.y,
+            xend: d => d.$unrooted.x,
+            yend: d => d.$unrooted.y,
             'text-align': 'post'
         }
     }
@@ -106,8 +128,10 @@ const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
         <VVGeomSegment :data="branchNodes" :x="d => d.$unrooted.x" :y="d => d.$unrooted.y"
             :xend="d => d.parent.$unrooted.x" :yend="d => d.parent.$unrooted.y" color="transparent" :linewidth="10"
             @click="linkclick" @contextmenu="linkclick" class="vvplot-interactive" />
-        <VVGeomMarkdownsegment :data="tipNodes" :label="fn_text_label" :color="fn_text_color" :size="fn_text_size"
-            v-bind="vbind_tip_label" :inset="labelOffset" />
+        <VVGeomMarkdownsegment v-if="showNodeLabels" :data="intermediateNodes" v-bind="vbind_node_label"
+            :label="fn_text_label" :color="fn_text_color" :size="fn_text_size" :inset="labelOffset" />
+        <VVGeomMarkdownsegment :data="tipNodes" v-bind="vbind_tip_label" :label="fn_text_label" :color="fn_text_color"
+            :size="fn_text_size" :inset="labelOffset" />
         <VVGeomSegment v-if="tipExtension" :data="tipNodes" :x="fn_tip_x" :y="fn_tip_y" :xend="d => d.$unrooted.x"
             :yend="d => d.$unrooted.y" :color="fn_branch_color" :linewidth="fn_branch_width" linetype="dashed" />
         <VVGeomPoint :data="branchNodes" :x="d => d.$unrooted.x" :y="d => d.$unrooted.y" :size="fn_point_size"

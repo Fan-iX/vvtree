@@ -7,7 +7,7 @@ import { VVPlot, VVAxisX, VVAxisY, VVGeomCurve, VVGeomSegment, VVGeomMarkdown, V
 const {
     branchLength, timeScale,
     color, pointSize, textSize, branchWidth, linetype, theme: $theme,
-    alignTooltip, labelOffset, tipExtension,
+    showNodeLabels, alignTooltip, labelOffset, tipExtension,
 } = defineProps({
     branchLength: { type: Boolean, default: true },
     timeScale: Boolean,
@@ -17,6 +17,7 @@ const {
     branchWidth: { type: Number, default: 1 },
     linetype: { type: String, default: 'solid' },
     theme: null,
+    showNodeLabels: Boolean,
     alignTooltip: Boolean,
     reverseLabels: Boolean,
     labelOffset: { type: Number, default: 6 },
@@ -28,6 +29,7 @@ const tree = defineModel("tree", { type: VVTreeNode })
 
 const nodes = computed(() => tree.value?._allNodes ?? [])
 const branchNodes = computed(() => nodes.value.filter(d => !d.isRoot))
+const intermediateNodes = computed(() => branchNodes.value.filter(d => !d.isTip))
 const tipNodes = computed(() => nodes.value.filter(d => d.isTip).reverse())
 const treeHeight = computed(() => branchLength ? tree.value?.height ?? 0 : tree.value.step_height ?? 0)
 const tipDelta = computed(() => treeHeight.value * tipExtension)
@@ -99,6 +101,9 @@ const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
         <VVGeomSegment :data="branchNodes" :x="d => d.$rectangular.x" :y="d => d.$rectangular.y"
             :xend="d => d.parent.$rectangular.x" :yend="d => d.$rectangular.y" color="transparent" :linewidth="10"
             @click="linkclick" @contextmenu="linkclick" class="vvplot-interactive" />
+        <VVGeomMarkdown v-if="showNodeLabels" :data="intermediateNodes" :x="d => d.$rectangular.x"
+            :y="d => d.$rectangular.y" :label="fn_text_label" :color="fn_text_color" :size="fn_text_size" :anchor-x="0"
+            :translate-x="labelOffset" />
         <VVGeomMarkdown :data="tipNodes" :x="fn_tip_x" :y="d => d.$rectangular.y" :label="fn_text_label"
             :color="fn_text_color" :size="fn_text_size" :anchor-x="0" :translate-x="labelOffset" />
         <VVGeomSegment v-if="alignTooltip || tipExtension" :data="tipNodes" :x="fn_tip_x" :y="d => d.$rectangular.y"

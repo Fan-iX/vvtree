@@ -7,7 +7,7 @@ import { VVPlot, VVAxisX, VVAxisY, VVGeomCurve, VVGeomSegment, VVGeomPoint, VVGe
 const {
     branchLength, timeScale,
     color, pointSize, textSize, branchWidth, linetype, theme: $theme,
-    reverseLabels, angleStart, angleExpand, alignTooltip, labelOffset, tipExtension,
+    showNodeLabels, reverseLabels, angleStart, angleExpand, alignTooltip, labelOffset, tipExtension,
 } = defineProps({
     branchLength: { type: Boolean, default: true },
     timeScale: Boolean,
@@ -17,6 +17,7 @@ const {
     branchWidth: { type: Number, default: 1 },
     linetype: { type: String, default: 'solid' },
     theme: null,
+    showNodeLabels: Boolean,
     alignTooltip: Boolean,
     reverseLabels: Boolean,
     labelOffset: { type: Number, default: 6 },
@@ -28,6 +29,7 @@ const tree = defineModel("tree", { type: VVTreeNode })
 
 const nodes = computed(() => tree.value?._allNodes ?? [])
 const branchNodes = computed(() => nodes.value.filter(d => !d.isRoot))
+const intermediateNodes = computed(() => branchNodes.value.filter(d => !d.isTip))
 const tipNodes = computed(() => nodes.value.filter(d => d.isTip).reverse())
 const treeHeight = computed(() => branchLength ? tree.value?.height ?? 0 : tree.value.step_height ?? 0)
 const tipDelta = computed(() => treeHeight.value * tipExtension)
@@ -69,6 +71,26 @@ const vbind_tip_label = computed(() => {
             y: d => circular_y({ r: d.parent.$circular.r, t: d.$circular.t }),
             xend: fn_tip_x,
             yend: fn_tip_y,
+            'text-align': 'post'
+        }
+    }
+})
+const vbind_node_label = computed(() => {
+    if (reverseLabels) {
+        function isRev(t) { return angleStart + t * angleExpand > 90 && angleStart + t * angleExpand < 270 }
+        return {
+            x: d => isRev(d.$circular.t) ? circular_x(d.$circular) : circular_x({ r: d.parent.$circular.r, t: d.$circular.t }),
+            y: d => isRev(d.$circular.t) ? circular_y(d.$circular) : circular_y({ r: d.parent.$circular.r, t: d.$circular.t }),
+            xend: d => isRev(d.$circular.t) ? circular_x({ r: d.parent.$circular.r, t: d.$circular.t }) : circular_x(d.$circular),
+            yend: d => isRev(d.$circular.t) ? circular_y({ r: d.parent.$circular.r, t: d.$circular.t }) : circular_y(d.$circular),
+            'text-align': d => isRev(d.$circular.t) ? 'pre' : 'post'
+        }
+    } else {
+        return {
+            x: d => circular_x({ r: d.parent.$circular.r, t: d.$circular.t }),
+            y: d => circular_y({ r: d.parent.$circular.r, t: d.$circular.t }),
+            xend: d => circular_x(d.$circular),
+            yend: d => circular_y(d.$circular),
             'text-align': 'post'
         }
     }
@@ -154,6 +176,8 @@ const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
             :xend="d => circular_x({ r: d.parent.$circular.r, t: d.$circular.t })"
             :yend="d => circular_y({ r: d.parent.$circular.r, t: d.$circular.t })" color="transparent" :linewidth="10"
             @click="linkclick" @contextmenu="linkclick" class="vvplot-interactive" />
+        <VVGeomMarkdownsegment v-if="showNodeLabels" :data="intermediateNodes" v-bind="vbind_node_label"
+            :label="fn_text_label" :color="fn_text_color" :size="fn_text_size" :anchor-x="0" :inset="labelOffset" />
         <VVGeomMarkdownsegment :data="tipNodes" v-bind="vbind_tip_label" :label="fn_text_label" :color="fn_text_color"
             :size="fn_text_size" :anchor-x="0" :inset="labelOffset" />
         <VVGeomSegment v-if="alignTooltip || tipExtension" :data="tipNodes" :x="fn_tip_x" :y="fn_tip_y"

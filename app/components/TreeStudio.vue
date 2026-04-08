@@ -125,6 +125,7 @@ const vBind = computed(() => {
         'label-offset': config.value.display[layout]?.label_offset,
         'tip-extension': config.value.display[layout]?.tip_extension,
         'reverse-labels': config.value.display[layout]?.reverse_labels,
+        'show-node-labels': config.value.display[layout]?.show_node_labels,
         theme: {
             plot: {
                 margin: config.value.display[layout]?.margin ?? undefined,
@@ -300,6 +301,9 @@ async function openAsPdf(svgXml) {
                         </label>
                         <label v-if="config.layout == 'unrooted' || config.layout == 'circular'">
                             <input type="checkbox" v-model="config.display[config.layout].reverse_labels">reverse label
+                        </label>
+                        <label>
+                            <input type="checkbox" v-model="config.display[config.layout].show_node_labels">node labels
                         </label>
                     </div>
                     plot size
