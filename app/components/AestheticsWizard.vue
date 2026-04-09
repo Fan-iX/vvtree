@@ -15,7 +15,12 @@ const emit = defineEmits(['apply', 'clear'])
 const activeTab = defineModel("tab", { type: String })
 const inventory = useLocalStorage('tree-studio-inventory', {})
 
-const aesthetics = ['color', 'point_color', 'point_size', 'branch_color', 'branch_width', 'branch_linetype', 'text_color', 'text_size', 'text_label']
+const aesthetics = [
+    ['color', 'point_color', 'point_size'],
+    ['branch_color', 'branch_width', 'branch_linetype'],
+    ['text_color', 'text_size', 'text_label'],
+    ['bar_range', 'bar_color', 'bar_width']
+]
 let colorFn = `node => {
     let categories = [
         (n) => n.name.startsWith("prefix"),
@@ -41,6 +46,13 @@ const defaultAesthetics = {
     text_color: colorFn,
     text_size: "node => 6",
     text_label: "node => node.isTip ? node.name : ''",
+    bar_range: `node => {
+    let CI = node.annotations?.['height_95%_HPD'] ?? node.annotations?.['reltime_95%_CI']
+    let height = node.height
+    return CI?.map(v => v - height)
+}`,
+    bar_color: "node => '#0000FF88'",
+    bar_width: "node => 1"
 }
 
 const open = computed({
@@ -85,8 +97,8 @@ function buildmap() {
 <template>
     <FloatingPanel v-model:open="open" :width="600" :height="400" title="Advanced aesthetics">
         <div class="flex flex-col h-full">
-            <div class="flex flex-wrap">
-                <button v-for="tab in aesthetics"
+            <div class="flex flex-wrap" v-for="tabs in aesthetics">
+                <button v-for="tab in tabs"
                     class="rounded-sm hover:bg-current/10 px-1 rounded-b-none border border-gray-300"
                     :class="activeTab == tab ? 'bg-current/10 hover:bg-current/15' : ''" @click="activeTab = tab">
                     {{ tab }}

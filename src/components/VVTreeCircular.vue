@@ -7,7 +7,7 @@ import { VVPlot, VVAxisX, VVAxisY, VVGeomCurve, VVGeomSegment, VVGeomPoint, VVGe
 const {
     branchLength, timeScale,
     color, pointSize, textSize, branchWidth, linetype, theme: $theme,
-    showNodeLabels, reverseLabels, angleStart, angleExpand, alignTooltip, labelOffset, tipExtension,
+    showNodeLabels, showNodeBars, reverseLabels, angleStart, angleExpand, alignTooltip, labelOffset, tipExtension,
 } = defineProps({
     branchLength: { type: Boolean, default: true },
     timeScale: Boolean,
@@ -17,7 +17,7 @@ const {
     branchWidth: { type: Number, default: 1 },
     linetype: { type: String, default: 'solid' },
     theme: null,
-    showNodeLabels: Boolean,
+    showNodeLabels: Boolean, showNodeBars: Boolean,
     alignTooltip: Boolean,
     reverseLabels: Boolean,
     labelOffset: { type: Number, default: 6 },
@@ -95,6 +95,12 @@ const vbind_node_label = computed(() => {
         }
     }
 })
+const vbind_node_bar = computed(() => ({
+    x: d => circular_x({ r: d.$circular.r + (d.attributes?.bar_range?.[0] ?? 0), t: d.$circular.t }),
+    y: d => circular_y({ r: d.$circular.r + (d.attributes?.bar_range?.[0] ?? 0), t: d.$circular.t }),
+    xend: d => circular_x({ r: d.$circular.r + (d.attributes?.bar_range?.[1] ?? 0), t: d.$circular.t }),
+    yend: d => circular_y({ r: d.$circular.r + (d.attributes?.bar_range?.[1] ?? 0), t: d.$circular.t }),
+}))
 
 function curveCircularBranch(context) {
     let points = []
@@ -163,6 +169,8 @@ const fn_branch_linetype = d => d.attributes?.branch_linetype ?? linetype
 const fn_text_size = d => d.attributes?.text_size ?? textSize
 const fn_text_color = d => d.attributes?.text_color ?? d.attributes?.color ?? color
 const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
+const fn_bar_width = d => d.attributes?.bar_width ?? branchWidth * 5
+const fn_bar_color = d => d.attributes?.bar_color ?? "#0000FF88"
 </script>
 <template>
     <VVPlot ref="plot" :theme="theme" :clip="false" @contextmenu.prevent :scales>
@@ -183,6 +191,8 @@ const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
         <VVGeomSegment v-if="alignTooltip || tipExtension" :data="tipNodes" :x="fn_tip_x" :y="fn_tip_y"
             :xend="d => circular_x(d.$circular)" :yend="d => circular_y(d.$circular)" :color="fn_branch_color"
             :linewidth="fn_branch_width" linetype="dashed" />
+        <VVGeomSegment v-if="showNodeBars" :data="nodes" v-bind="vbind_node_bar" :color="fn_bar_color"
+            :linewidth="fn_bar_width" />
         <VVGeomPoint :data="branchNodes" :x="d => circular_x(d.$circular)" :y="d => circular_y(d.$circular)"
             :size="fn_point_size" :color="fn_point_color" :shape="fn_point_shape" @click="nodeclick"
             @contextmenu="nodeclick" class="cursor-pointer" render="svg" />

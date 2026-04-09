@@ -1,9 +1,7 @@
 <script setup>
 import WidgetJsonTable from './widget/JsonTable.vue'
-import WidgetColorPicker from './widget/ColorPicker.vue'
 import WTextarea from './widget/Textarea.vue'
 import WInput from './widget/Input.vue'
-import WSelectInput from './widget/SelectInput.vue'
 import WDetails from './widget/Details.vue'
 import WCheckInput from './widget/CheckInput.vue'
 import Popover from './widget/Popover.vue'
@@ -126,6 +124,7 @@ const vBind = computed(() => {
         'tip-extension': config.value.display[layout]?.tip_extension,
         'reverse-labels': config.value.display[layout]?.reverse_labels,
         'show-node-labels': config.value.display[layout]?.show_node_labels,
+        'show-node-bars': config.value.display[layout]?.show_node_bars,
         theme: {
             plot: {
                 margin: config.value.display[layout]?.margin ?? undefined,
@@ -158,7 +157,7 @@ const nodeInfo = computed(() => {
         label: activeNode.value.label ?? activeNode.value.name,
         depth, height,
         'depth%': depth / (depth + height) * 100 || 0,
-        annotation: activeNode.value.annotations,
+        annotations: activeNode.value.annotations,
     }
 }, { deep: true })
 function onNodeClick(e, c, d) {
@@ -305,6 +304,9 @@ async function openAsPdf(svgXml) {
                         <label>
                             <input type="checkbox" v-model="config.display[config.layout].show_node_labels">node labels
                         </label>
+                        <label v-if="config.layout == 'rectangular' || config.layout == 'circular'">
+                            <input type="checkbox" v-model="config.display[config.layout].show_node_bars">node bars
+                        </label>
                     </div>
                     plot size
                     <hr class="text-gray-300">
@@ -400,86 +402,52 @@ async function openAsPdf(svgXml) {
                     global
                     <hr class="text-gray-300">
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="color">
-                        color:
-                        <WidgetColorPicker v-model="activeNode.attributes.color" />
-                        <Icon icon="lucide:x" @click="activeNode.attributes.color = null"
-                            class="inline-block align-middle hover:text-red-500 cursor-pointer" />
-                    </AttributeInput>
+                        aes="color" v-model="activeNode.attributes.color" type="color" label="color" />
                     point
                     <hr class="text-gray-300">
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="point_color">
-                        color:
-                        <WidgetColorPicker v-model="activeNode.attributes.point_color" />
-                        <Icon icon="lucide:x" @click="activeNode.attributes.point_color = null"
-                            class="inline-block align-middle hover:text-red-500 cursor-pointer" />
-                    </AttributeInput>
+                        aes="point_color" v-model="activeNode.attributes.point_color" type="color" label="color" />
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="point_size">
-                        size:
-                        <WInput type="number" :min="1" :step="1" v-model="activeNode.attributes.point_size"
-                            placeholder="6" />
-                        <Icon icon="lucide:x" @click="activeNode.attributes.point_size = null"
-                            class="inline-block align-middle hover:text-red-500 cursor-pointer" />
-                    </AttributeInput>
+                        aes="point_size" v-model="activeNode.attributes.point_size" type="number" :min="1" :step="1"
+                        placeholder="6" label="size" />
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="point_shape">
-                        shape:
-                        <WSelectInput v-model="activeNode.attributes.point_shape"
-                            :options="['circle', 'square', 'triangle', 'diamond']" placeholder="circle" />
-                        <Icon icon="lucide:x" @click="activeNode.attributes.point_shape = null"
-                            class="inline-block align-middle hover:text-red-500 cursor-pointer" />
-                    </AttributeInput>
+                        aes="point_shape" v-model="activeNode.attributes.point_shape" type="option"
+                        :options="['circle', 'square', 'triangle', 'diamond']" label="shape" />
                     branch
                     <hr class="text-gray-300">
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="branch_color">
-                        color:
-                        <WidgetColorPicker v-model="activeNode.attributes.branch_color" />
-                        <Icon icon="lucide:x" @click="activeNode.attributes.branch_color = null"
-                            class="inline-block align-middle hover:text-red-500 cursor-pointer" />
-                    </AttributeInput>
+                        aes="branch_color" v-model="activeNode.attributes.branch_color" type="color" label="color" />
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="branch_width">
-                        line width:
-                        <WInput type="number" :min="1" :step="1" v-model="activeNode.attributes.branch_width"
-                            placeholder="1" />
-                        <Icon icon="lucide:x" @click="activeNode.attributes.branch_width = null"
-                            class="inline-block align-middle hover:text-red-500 cursor-pointer" />
-                    </AttributeInput>
+                        aes="branch_width" v-model="activeNode.attributes.branch_width" type="number" :min="1" :step="1"
+                        placeholder="1" label="line width" />
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="branch_linetype">
-                        line type:
-                        <WSelectInput v-model="activeNode.attributes.branch_linetype"
-                            :options="['solid', 'dashed', 'dotted', 'dotdash', 'longdash', 'twodash']"
-                            placeholder="solid" />
-                    </AttributeInput>
+                        aes="branch_linetype" v-model="activeNode.attributes.branch_linetype" type="option"
+                        :options="['solid', 'dashed', 'dotted', 'dotdash', 'longdash', 'twodash']" placeholder="solid"
+                        label="line type" />
                     text
                     <hr class="text-gray-300">
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="text_label">
-                        label:
-                        <WInput v-model="activeNode.attributes.text_label"
-                            :placeholder="activeNode.label ?? activeNode.name ?? '<empty>'" />
-                        <Icon icon="lucide:x" @click="activeNode.attributes.text_label = null"
-                            class="inline-block align-middle hover:text-red-500 cursor-pointer" />
-                    </AttributeInput>
+                        aes="text_label" v-model="activeNode.attributes.text_label" type="text"
+                        :placeholder="activeNode.label ?? activeNode.name ?? '<empty>'" label="label" />
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="text_color">
-                        color:
-                        <WidgetColorPicker v-model="activeNode.attributes.text_color" />
-                        <Icon icon="lucide:x" @click="activeNode.attributes.text_color = null"
-                            class="inline-block align-middle hover:text-red-500 cursor-pointer" />
-                    </AttributeInput>
+                        aes="text_color" v-model="activeNode.attributes.text_color" type="color" label="color" />
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="text_size">
-                        size:
-                        <WInput type="number" :min="1" :step="1" v-model="activeNode.attributes.text_size"
-                            placeholder="4" />
-                        <Icon icon="lucide:x" @click="activeNode.attributes.text_size = null"
-                            class="inline-block align-middle hover:text-red-500 cursor-pointer" />
-                    </AttributeInput>
+                        aes="text_size" v-model="activeNode.attributes.text_size" type="number" :min="1" :step="1"
+                        placeholder="4" label="size" />
+                    <template v-if="config.display[config.layout].show_node_bars">
+                        bar
+                        <hr class="text-gray-300">
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
+                            @panel="toggleAesPanel" aes="bar_range" v-model="activeNode.attributes.bar_range"
+                            type="range" label="range" />
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
+                            @panel="toggleAesPanel" aes="bar_width" v-model="activeNode.attributes.bar_width"
+                            type="number" :min="1" :step="1"
+                            :placeholder="(activeNode.attributes.branch_width || 1) * 5" label="width" />
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
+                            @panel="toggleAesPanel" aes="bar_color" v-model="activeNode.attributes.bar_color"
+                            type="color" label="color" placeholder="#0000FF88" />
+                    </template>
                 </div>
             </WDetails>
             <WDetails summary-class="bg-current/10" open>

@@ -2,18 +2,19 @@
 import { computed } from 'vue'
 const {
     modelValue, value, variant, coalesce, placeholder, modelModifiers,
-    step, min, max,
+    type, step, min, max,
 } = defineProps({
     modelValue: null, value: null, coalesce: null, placeholder: null,
     modelModifiers: { default: () => ({}) },
     variant: { type: String, default: "underline" },
-    step: null, min: null, max: null,
+    type: String, step: null, min: null, max: null,
 })
 const emit = defineEmits(['update:modelValue'])
 const className = computed(() => [
-    "appearance-none min-w-4 field-sizing-content bg-transparent",
+    "appearance-none field-sizing-content bg-transparent",
     "disabled:opacity-50 disabled:cursor-not-allowed disabled:border-none",
     "read-only:bg-current/3",
+    type == "number" ? "min-w-6" : "min-w-4",
     variant == "outline" ? "border border-gray-300" : "outline-none",
     variant == "underline" ? "border-b outline-none" : "",
     variant == "leftline" ? "border-l outline-none" : "",
@@ -27,7 +28,7 @@ function onchange(e) {
     if (!modelModifiers.lazy) return
     let val = e.target.value
     if (val === "") val = coalesce
-    else if (modelModifiers.int || modelModifiers.number) val = Number(val)
+    else if (modelModifiers.int || modelModifiers.number || type == "number") val = Number(val)
     if (Number.isNaN(val)) val = coalesce
     emit('update:modelValue', val)
 }
@@ -35,7 +36,7 @@ function oninput(e) {
     if (modelModifiers.lazy) return
     let val = e.target.value
     if (val === "") val = coalesce
-    else if (modelModifiers.int || modelModifiers.number) val = Number(val)
+    else if (modelModifiers.int || modelModifiers.number || type == "number") val = Number(val)
     if (Number.isNaN(val)) val = coalesce
     emit('update:modelValue', val)
 }
@@ -61,5 +62,5 @@ const model = computed({
 </script>
 <template>
     <input :class="className" v-model="model" @input="oninput" @change="onchange" @wheel="onwheel" @focus="onfocus"
-        :placeholder="placeholder" :step="step" :min="min" :max="max" v-tw-merge />
+        :placeholder="placeholder" :type="type" :step="step" :min="min" :max="max" v-tw-merge />
 </template>

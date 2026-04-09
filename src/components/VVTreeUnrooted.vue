@@ -17,7 +17,7 @@ const {
     branchWidth: { type: Number, default: 1 },
     linetype: { type: String, default: 'solid' },
     theme: null,
-    showNodeLabels: Boolean,
+    showNodeLabels: Boolean, showNodeBars: Boolean,
     alignTooltip: Boolean,
     reverseLabels: Boolean,
     labelOffset: { type: Number, default: 6 },

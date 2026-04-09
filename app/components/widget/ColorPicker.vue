@@ -3,14 +3,15 @@ import { computed } from 'vue'
 import Popover from './Popover.vue'
 import Palette from './Palette.vue'
 const model = defineModel()
-const { disabled, class: $class, variant } = defineProps({
-    disabled: Boolean, class: String,
+const { disabled, class: $class, variant, placeholder } = defineProps({
+    disabled: Boolean, class: String, placeholder: String,
     variant: { type: String, default: "underline" },
 })
 const textInputClass = computed(() => [
     "font-mono appearance-none min-w-4 field-sizing-content bg-transparent",
     "disabled:opacity-50 disabled:cursor-not-allowed disabled:border-none",
-    "read-only:bg-current/3",
+    "read-only:bg-current/3", 
+    placeholder ? 'placeholder-current' : '',
     variant == "outline" ? "border border-gray-300" : "",
     variant == "underline" ? "border-b outline-none" : "",
     variant == "leftline" ? "border-l outline-none" : "",
@@ -51,8 +52,8 @@ const palettes = {
         <template #trigger>
             <input type="color" v-model="model" :class="colorInputClass" :disabled v-tw-merge
                 v-if="variant == 'colorinput'" @click="$event.handled = true">
-            <input type="text" v-model.lazy="model" :class="textInputClass" :style="{ color: model }" placeholder="null"
-                :disabled v-tw-merge />
+            <input type="text" v-model.lazy="model" :class="textInputClass" :style="{ color: model || placeholder }"
+                :placeholder="placeholder ?? 'null'" :disabled v-tw-merge />
         </template>
         <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-sm">
             <div class="text-gray-500">&lt;null&gt;</div>

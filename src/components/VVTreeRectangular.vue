@@ -7,7 +7,7 @@ import { VVPlot, VVAxisX, VVAxisY, VVGeomCurve, VVGeomSegment, VVGeomMarkdown, V
 const {
     branchLength, timeScale,
     color, pointSize, textSize, branchWidth, linetype, theme: $theme,
-    showNodeLabels, alignTooltip, labelOffset, tipExtension,
+    showNodeLabels, showNodeBars, alignTooltip, labelOffset, tipExtension,
 } = defineProps({
     branchLength: { type: Boolean, default: true },
     timeScale: Boolean,
@@ -17,7 +17,7 @@ const {
     branchWidth: { type: Number, default: 1 },
     linetype: { type: String, default: 'solid' },
     theme: null,
-    showNodeLabels: Boolean,
+    showNodeLabels: Boolean, showNodeBars: Boolean,
     alignTooltip: Boolean,
     reverseLabels: Boolean,
     labelOffset: { type: Number, default: 6 },
@@ -40,6 +40,11 @@ const fn_points = d => [
     { x: d.parent.$rectangular.x, y: d.parent.$rectangular.y },
 ]
 const fn_tip_x = d => alignTooltip ? tipX.value + tipDelta.value : d.$rectangular.x + tipDelta.value
+const vbind_node_bar = computed(() => ({
+    x: d => d.$rectangular.x + (d.attributes?.bar_range?.[0] || 0),
+    y: d => d.$rectangular.y,
+    xend: d => d.$rectangular.x + (d.attributes?.bar_range?.[1] || 0),
+}))
 
 const emit = defineEmits(["nodeclick", "linkclick"])
 
@@ -89,6 +94,8 @@ const fn_branch_linetype = d => d.attributes?.branch_linetype ?? linetype
 const fn_text_size = d => d.attributes?.text_size ?? textSize
 const fn_text_color = d => d.attributes?.text_color ?? d.attributes?.color ?? color
 const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
+const fn_bar_width = d => d.attributes?.bar_width ?? branchWidth * 5
+const fn_bar_color = d => d.attributes?.bar_color ?? "#0000FF88"
 </script>
 <template>
     <VVPlot ref="plot" :theme="theme" :clip="false" @contextmenu.prevent :scales>
@@ -108,6 +115,8 @@ const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
             :color="fn_text_color" :size="fn_text_size" :anchor-x="0" :translate-x="labelOffset" />
         <VVGeomSegment v-if="alignTooltip || tipExtension" :data="tipNodes" :x="fn_tip_x" :y="d => d.$rectangular.y"
             :xend="d => d.$rectangular.x" :color="fn_branch_color" :linewidth="fn_branch_width" linetype="dashed" />
+        <VVGeomSegment v-if="showNodeBars" :data="nodes" v-bind="vbind_node_bar" :color="fn_bar_color"
+            :linewidth="fn_bar_width" />
         <VVGeomPoint :data="nodes" :x="d => d.$rectangular.x" :y="d => d.$rectangular.y" :size="fn_point_size"
             :color="fn_point_color" :shape="fn_point_shape" @click="nodeclick" @contextmenu="nodeclick"
             class="cursor-pointer" render="svg" />
