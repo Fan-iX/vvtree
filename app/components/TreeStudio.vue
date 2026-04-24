@@ -33,6 +33,7 @@ watch(() => config.value.layout, l => {
     config.value.display[l] ??= {}
     config.value.display[l].height ??= containerRef.value?.clientHeight
     config.value.display[l].width ??= containerRef.value?.clientWidth
+    config.value.display[l].unit ??= "px"
 }, { deep: true, immediate: true })
 const zoom_scale = computed(() => config.value?.display?.[config.value.layout]?.zoom_scale ?? 1)
 
@@ -125,6 +126,7 @@ const vBind = computed(() => {
         'reverse-labels': config.value.display[layout]?.reverse_labels,
         'show-node-labels': config.value.display[layout]?.show_node_labels,
         'show-node-bars': config.value.display[layout]?.show_node_bars,
+        dpi: config.value.display[layout]?.dpi,
         theme: {
             plot: {
                 margin: config.value.display[layout]?.margin ?? undefined,
@@ -197,6 +199,21 @@ function applyAesthetics(range, aes, funcText) {
         nodes.forEach(n => n.attributes[aes] = fn(n))
     } catch (e) { console.error(e) }
 }
+const pxToUnit = { "px": 1, "in": 1 / 96, "cm": 2.54 / 96, "mm": 25.4 / 96 }
+const precision = computed(() => 10 ** -Math.floor(Math.log10(pxToUnit[config.value.display[config.value.layout].unit] ?? 1)))
+const unitRatio = computed(() => {
+    let { unit = "px", dpi } = config.value.display[config.value.layout]
+    if (unit == "px") return (dpi ?? 96) / 96
+    return pxToUnit[unit]
+})
+const w = computed({
+    get() { return Math.round(config.value.display[config.value.layout].width * unitRatio.value * precision.value) / precision.value },
+    set(v) { config.value.display[config.value.layout].width = v / unitRatio.value }
+})
+const h = computed({
+    get() { return Math.round(config.value.display[config.value.layout].height * unitRatio.value * precision.value) / precision.value },
+    set(v) { config.value.display[config.value.layout].height = v / unitRatio.value }
+})
 
 defineExpose({ stat })
 
@@ -209,11 +226,11 @@ function openAsSvg(svgXml) {
     openContentWindow(blob)
 }
 async function downloadAsPng(svgXml, options) {
-    let blob = await svg2png(svgXml)
+    let blob = await svg2png(svgXml, { dpi: config.value.display[config.value.layout]?.dpi ?? 96 })
     downloadContent(blob, options)
 }
 async function openAsPng(svgXml) {
-    let blob = await svg2png(svgXml)
+    let blob = await svg2png(svgXml, { dpi: config.value.display[config.value.layout]?.dpi ?? 96 })
     openContentWindow(blob)
 }
 async function downloadAsPdf(svgXml, options) {
@@ -311,20 +328,26 @@ async function openAsPdf(svgXml) {
                     plot size
                     <hr class="text-gray-300">
                     <div class="grid grid-cols-2 ml-2">
-                        <label>
+                        <div class="col-span-full">
                             width:
-                            <WInput type="number" v-model.int="config.display[config.layout].width" :step="10"
-                                class="w-[6ch]" />
-                        </label>
-                        <label>
+                            <WInput type="number" v-model.int.lazy="w" :step="10" class="w-[6ch]" />
+                            <select v-model="config.display[config.layout].unit"
+                                class="appearance-none min-w-[1ex] field-sizing-content bg-transparent border-b">
+                                <option v-for="_, u in pxToUnit">{{ u }}</option>
+                            </select>
+                        </div>
+                        <div class="col-span-full">
                             height:
-                            <WInput type="number" v-model.int="config.display[config.layout].height" :step="10"
-                                class="w-[6ch]" />
-                        </label>
+                            <WInput type="number" v-model.int.lazy="h" :step="10" class="w-[6ch]" />
+                            <select v-model="config.display[config.layout].unit"
+                                class="appearance-none min-w-[1ex] field-sizing-content bg-transparent border-b">
+                                <option v-for="_, u in pxToUnit">{{ u }}</option>
+                            </select>
+                        </div>
                         <div>
                             <label>
                                 zoom:
-                                <WInput type="number" v-model.number="config.display[config.layout].zoom_scale"
+                                <WInput type="number" v-model.number.lazy="config.display[config.layout].zoom_scale"
                                     :step="0.1" :min="0" class="w-[4ch]" placeholder="1" />
                             </label>
                             <Popover inline variant="tooltip" side="top">
@@ -333,6 +356,18 @@ async function openAsPdf(svgXml) {
                                         class="inline-block align-middle hover:text-red-500 cursor-pointer" />
                                 </template>
                                 reset zoom
+                            </Popover>
+                        </div>
+                        <div>
+                            DPI:
+                            <WInput type="number" v-model.int.lazy="config.display[config.layout].dpi" :step="24"
+                                :min="72" class="w-[5ch]" :placeholder="96" />
+                            <Popover inline variant="tooltip" side="top">
+                                <template #trigger>
+                                    <Icon icon="lucide:x" @click="delete config.display[config.layout].dpi"
+                                        class="inline-block align-middle hover:text-red-500 cursor-pointer" />
+                                </template>
+                                reset dpi
                             </Popover>
                         </div>
                     </div>

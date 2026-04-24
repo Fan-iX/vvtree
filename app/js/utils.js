@@ -40,18 +40,18 @@ export const palettes = {
     Alphabet: ["#AA0DFE", "#3283FE", "#85660D", "#782AB6", "#565656", "#1C8356", "#16FF32", "#F7E1A0", "#E2E2E2", "#1CBE4F", "#C4451C", "#DEA0FD", "#FE00FA", "#325A9B", "#FEAF16", "#F8A19F", "#90AD1C", "#F6222E", "#1CFFCE", "#2ED9FF", "#B10DA1", "#C075A6", "#FC1CBF", "#B00068", "#FBE426", "#FA0087"],
 }
 
-import { jsPDF } from "jspdf";
+import { jsPDF } from "jspdf"
 import 'svg2pdf.js'
 
-export function svg2png(svgXml) {
+export function svg2png(svgXml, { dpi = 96 } = {}) {
     const { promise, resolve, reject } = Promise.withResolvers()
     const url = URL.createObjectURL(new Blob(['<?xml version="1.0" standalone="no"?>\r\n', svgXml], { type: 'image/svg+xml' }))
     const img = new Image()
     img.onload = () => {
         try {
             const canvas = document.createElement('canvas')
-            canvas.width = img.naturalWidth
-            canvas.height = img.naturalHeight
+            canvas.width = img.naturalWidth * dpi / 96
+            canvas.height = img.naturalHeight * dpi / 96
             const ctx = canvas.getContext('2d')
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
             canvas.toBlob(blob => resolve(blob), 'image/png')
@@ -76,6 +76,15 @@ export async function svg2pdf(svgXml) {
         '<?xml version="1.0" standalone="no"?>\r\n' + svgXml,
         "image/svg+xml"
     ).documentElement
+    let g = document.createElementNS("http://www.w3.org/2000/svg", "g")
+    while (svg.firstChild) {
+        g.appendChild(svg.firstChild)
+    }
+    g.setAttribute("transform", "scale(0.75)")
+    svg.appendChild(g)
+    svg.setAttribute("width", svg.width.baseVal.value * 3 / 4)
+    svg.setAttribute("height", svg.height.baseVal.value * 3 / 4)
+    svg.setAttribute("viewBox", `0 0 ${svg.width.baseVal.value} ${svg.height.baseVal.value}`)
     const doc = new jsPDF({
         orientation: svg.width.baseVal.value >= svg.height.baseVal.value ? 'landscape' : 'portrait',
         unit: 'pt',
@@ -108,7 +117,7 @@ export function svg2svg(svgXml) {
         "image/svg+xml"
     ).documentElement
     let style = document.createElement('style')
-    style.textContent = `@media print { @page { size: ${svg.width.baseVal.value}px ${svg.height.baseVal.value}px; margin: 0; } }`
+    style.textContent = `@media print { @page { size: ${svg.width.baseVal.value / 96}in ${svg.height.baseVal.value / 96}in; margin: 0; } }`
     svg.prepend(style)
     let xml = new XMLSerializer().serializeToString(svg)
     return new Blob([xml], { type: 'image/svg+xml' })
