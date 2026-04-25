@@ -19,7 +19,8 @@ const aesthetics = [
     ['color', 'point_color', 'point_size'],
     ['branch_color', 'branch_width', 'branch_linetype'],
     ['text_color', 'text_size', 'text_label'],
-    ['bar_range', 'bar_color', 'bar_width']
+    ['bar_range', 'bar_color', 'bar_width'],
+    ['anchor_x', 'anchor_y', 'translate_x', 'translate_y'],
 ]
 let colorFn = `node => {
     let categories = [
@@ -52,7 +53,11 @@ const defaultAesthetics = {
     return CI?.map(v => v - height)
 }`,
     bar_color: "node => '#0000FF88'",
-    bar_width: "node => 1"
+    bar_width: "node => 1",
+    anchor_x: "node => node.isTip ? 0.5 : 0",
+    anchor_y: "node => 0.5",
+    translate_x: "node => 0",
+    translate_y: "node => 0",
 }
 
 const open = computed({

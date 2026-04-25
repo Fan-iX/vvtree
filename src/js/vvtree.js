@@ -70,7 +70,6 @@ export class VVTreeNode extends TreeNode {
                 let prev = tokens[i - 1];
                 if (prev == ')' || prev == '(' || prev == ',') {
                     tree.label = tree.name = token;
-                    tree.annotations[":name"] = isNaN(token) ? token : +token;
                 } else if (prev == '::') {
                     tree.annotations[":proportion"] = parseFloat(token);
                 } else if (prev == ':') {

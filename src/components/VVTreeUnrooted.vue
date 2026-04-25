@@ -115,6 +115,10 @@ const fn_branch_linetype = d => d.attributes?.branch_linetype ?? linetype
 const fn_text_size = d => d.attributes?.text_size ?? textSize
 const fn_text_color = d => d.attributes?.text_color ?? d.attributes?.color ?? color
 const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
+const fn_node_anchor_x = d => d.attributes?.node_anchor_x ?? 0.5
+const fn_node_anchor_y = d => d.attributes?.node_anchor_y
+const fn_node_translate_x = d => d.attributes?.node_translate_x
+const fn_node_translate_y = d => d.attributes?.node_translate_y
 </script>
 <template>
     <VVPlot ref="plot" :theme="theme" :clip="false" @contextmenu.prevent :scales>
@@ -129,7 +133,8 @@ const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
             :xend="d => d.parent.$unrooted.x" :yend="d => d.parent.$unrooted.y" color="transparent" :linewidth="10"
             @click="linkclick" @contextmenu="linkclick" class="vvplot-interactive" />
         <VVGeomMarkdownsegment v-if="showNodeLabels" :data="intermediateNodes" v-bind="vbind_node_label"
-            :label="fn_text_label" :color="fn_text_color" :size="fn_text_size" :inset="labelOffset" />
+            :label="fn_text_label" :color="fn_text_color" :size="fn_text_size" :anchor-x="fn_node_anchor_x"
+            :anchor-y="fn_node_anchor_y" :translate-x="fn_node_translate_x" :translate-y="fn_node_translate_y" />
         <VVGeomMarkdownsegment :data="tipNodes" v-bind="vbind_tip_label" :label="fn_text_label" :color="fn_text_color"
             :size="fn_text_size" :inset="labelOffset" />
         <VVGeomSegment v-if="tipExtension" :data="tipNodes" :x="fn_tip_x" :y="fn_tip_y" :xend="d => d.$unrooted.x"

@@ -96,6 +96,10 @@ const fn_text_color = d => d.attributes?.text_color ?? d.attributes?.color ?? co
 const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
 const fn_bar_width = d => d.attributes?.bar_width ?? branchWidth * 5
 const fn_bar_color = d => d.attributes?.bar_color ?? "#0000FF88"
+const fn_node_anchor_x = d => d.attributes?.node_anchor_x
+const fn_node_anchor_y = d => d.attributes?.node_anchor_y
+const fn_node_translate_x = d => d.attributes?.node_translate_x
+const fn_node_translate_y = d => d.attributes?.node_translate_y
 </script>
 <template>
     <VVPlot ref="plot" :theme="theme" :clip="false" @contextmenu.prevent :scales>
@@ -109,8 +113,9 @@ const fn_bar_color = d => d.attributes?.bar_color ?? "#0000FF88"
             :xend="d => d.parent.$rectangular.x" :yend="d => d.$rectangular.y" color="transparent" :linewidth="10"
             @click="linkclick" @contextmenu="linkclick" class="vvplot-interactive" />
         <VVGeomMarkdown v-if="showNodeLabels" :data="intermediateNodes" :x="d => d.$rectangular.x"
-            :y="d => d.$rectangular.y" :label="fn_text_label" :color="fn_text_color" :size="fn_text_size" :anchor-x="0"
-            :translate-x="labelOffset" />
+            :y="d => d.$rectangular.y" :label="fn_text_label" :color="fn_text_color" :size="fn_text_size"
+            :anchor-x="fn_node_anchor_x" :anchor-y="fn_node_anchor_y" :translate-x="fn_node_translate_x"
+            :translate-y="fn_node_translate_y" />
         <VVGeomMarkdown :data="tipNodes" :x="fn_tip_x" :y="d => d.$rectangular.y" :label="fn_text_label"
             :color="fn_text_color" :size="fn_text_size" :anchor-x="0" :translate-x="labelOffset" />
         <VVGeomSegment v-if="alignTooltip || tipExtension" :data="tipNodes" :x="fn_tip_x" :y="d => d.$rectangular.y"

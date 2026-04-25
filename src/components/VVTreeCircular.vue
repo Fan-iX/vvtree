@@ -36,6 +36,7 @@ const tipDelta = computed(() => treeHeight.value * tipExtension)
 const tipR = computed(() => nodes.value.reduce((a, d) => Math.max(a, d.$circular.r), 0) + tipDelta.value)
 
 const fn_points = d => [
+    { x: -d.parent.$circular.r, y: -d.parent.$circular.r },
     { x: 0, y: 0 },
     circular_xy(d.parent.$circular),
     circular_xy({ r: d.parent.$circular.r, t: d.$circular.t }),
@@ -108,15 +109,11 @@ function curveCircularBranch(context) {
         lineStart: () => { points = [] },
         point: (x, y) => { points.push([x, y]) },
         lineEnd: () => {
-            if (points.length == 4) {
-                const [c, p1, p2, t] = points
+            if (points.length == 5) {
+                const [k, c, p1, p2, t] = points
                 context.moveTo(...p1)
-                let x1sq = (p1[0] - c[0]) ** 2, y1sq = (p1[1] - c[1]) ** 2,
-                    x2sq = (p2[0] - c[0]) ** 2, y2sq = (p2[1] - c[1]) ** 2,
-                    det = x1sq * y2sq - x2sq * y1sq,
-                    u = (y2sq - y1sq) / det, v = (x1sq - x2sq) / det
-                if (u > 0 && v > 0) {
-                    let rx = Math.sqrt(1 / u), ry = Math.sqrt(1 / v)
+                let rx = Math.abs(c[0] - k[0]), ry = Math.abs(c[1] - k[1])
+                if (rx > 0 && ry > 0) {
                     let a1 = Math.atan2((p1[1] - c[1]) / ry, (p1[0] - c[0]) / rx),
                         a2 = Math.atan2((p2[1] - c[1]) / ry, (p2[0] - c[0]) / rx)
                     if (context.ellipse) {
@@ -171,6 +168,10 @@ const fn_text_color = d => d.attributes?.text_color ?? d.attributes?.color ?? co
 const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
 const fn_bar_width = d => d.attributes?.bar_width ?? branchWidth * 5
 const fn_bar_color = d => d.attributes?.bar_color ?? "#0000FF88"
+const fn_node_anchor_x = d => d.attributes?.node_anchor_x ?? 0.5
+const fn_node_anchor_y = d => d.attributes?.node_anchor_y
+const fn_node_translate_x = d => d.attributes?.node_translate_x
+const fn_node_translate_y = d => d.attributes?.node_translate_y
 </script>
 <template>
     <VVPlot ref="plot" :theme="theme" :clip="false" @contextmenu.prevent :scales>
@@ -185,9 +186,10 @@ const fn_bar_color = d => d.attributes?.bar_color ?? "#0000FF88"
             :yend="d => circular_y({ r: d.parent.$circular.r, t: d.$circular.t })" color="transparent" :linewidth="10"
             @click="linkclick" @contextmenu="linkclick" class="vvplot-interactive" />
         <VVGeomMarkdownsegment v-if="showNodeLabels" :data="intermediateNodes" v-bind="vbind_node_label"
-            :label="fn_text_label" :color="fn_text_color" :size="fn_text_size" :anchor-x="0" :inset="labelOffset" />
+            :label="fn_text_label" :color="fn_text_color" :size="fn_text_size" :anchor-x="fn_node_anchor_x"
+            :anchor-y="fn_node_anchor_y" :translate-x="fn_node_translate_x" :translate-y="fn_node_translate_y" />
         <VVGeomMarkdownsegment :data="tipNodes" v-bind="vbind_tip_label" :label="fn_text_label" :color="fn_text_color"
-            :size="fn_text_size" :anchor-x="0" :inset="labelOffset" />
+            :size="fn_text_size" :inset="labelOffset" />
         <VVGeomSegment v-if="alignTooltip || tipExtension" :data="tipNodes" :x="fn_tip_x" :y="fn_tip_y"
             :xend="d => circular_x(d.$circular)" :yend="d => circular_y(d.$circular)" :color="fn_branch_color"
             :linewidth="fn_branch_width" linetype="dashed" />
