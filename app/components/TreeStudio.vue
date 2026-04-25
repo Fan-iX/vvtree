@@ -469,8 +469,26 @@ async function openAsPdf(svgXml) {
                     <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
                         aes="text_size" v-model="activeNode.attributes.text_size" type="number" :min="1" :step="1"
                         placeholder="4" label="size" />
+                    <template v-if="config.display[config.layout].show_node_labels">
+                        node labels
+                        <hr class="text-gray-300">
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
+                            @panel="toggleAesPanel" aes="node_anchor_x" v-model="activeNode.attributes.node_anchor_x"
+                            type="number" :step="0.1" placeholder="0.5" label="anchor x" />
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
+                            @panel="toggleAesPanel" aes="node_anchor_y" v-model="activeNode.attributes.node_anchor_y"
+                            type="number" :step="0.1" placeholder="0.5" label="anchor y" />
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
+                            @panel="toggleAesPanel" aes="node_translate_x"
+                            v-model="activeNode.attributes.node_translate_x" type="number" :step="0.1" placeholder="0"
+                            label="translate x" />
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
+                            @panel="toggleAesPanel" aes="node_translate_y"
+                            v-model="activeNode.attributes.node_translate_y" type="number" :step="0.1" placeholder="0"
+                            label="translate y" />
+                    </template>
                     <template v-if="config.display[config.layout].show_node_bars">
-                        bar
+                        bars
                         <hr class="text-gray-300">
                         <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
                             @panel="toggleAesPanel" aes="bar_range" v-model="activeNode.attributes.bar_range"
