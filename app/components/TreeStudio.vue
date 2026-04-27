@@ -2,6 +2,7 @@
 import WidgetJsonTable from './widget/JsonTable.vue'
 import WTextarea from './widget/Textarea.vue'
 import WInput from './widget/Input.vue'
+import WSelect from './widget/Select.vue'
 import WDetails from './widget/Details.vue'
 import WCheckInput from './widget/CheckInput.vue'
 import Popover from './widget/Popover.vue'
@@ -179,9 +180,6 @@ function applyToDescendants(aes) {
 }
 const aes_panel_tab = ref(null)
 
-function toggleAesPanel(aes) {
-    aes_panel_tab.value = aes != aes_panel_tab.value ? aes : null
-}
 function resetAesthetics(aes) {
     if (config.value.aesthetics?.[aes]) delete config.value.aesthetics[aes]
     tree.value.allNodes.forEach(n => n.attributes[aes] = null)
@@ -200,7 +198,7 @@ function applyAesthetics(range, aes, funcText) {
     } catch (e) { console.error(e) }
 }
 const pxToUnit = { "px": 1, "in": 1 / 96, "cm": 2.54 / 96, "mm": 25.4 / 96 }
-const precision = computed(() => 10 ** -Math.floor(Math.log10(pxToUnit[config.value.display[config.value.layout].unit] ?? 1)))
+const precision = computed(() => 10 ** -Math.ceil(Math.log10(pxToUnit[config.value.display[config.value.layout].unit] ?? 1)))
 const unitRatio = computed(() => {
     let { unit = "px", dpi } = config.value.display[config.value.layout]
     if (unit == "px") return (dpi ?? 96) / 96
@@ -286,12 +284,7 @@ async function openAsPdf(svgXml) {
                     layout
                     <hr class="text-gray-300">
                     <div class="grid grid-cols-2 ml-2 justify-items-start">
-                        <select v-model="config.layout"
-                            class="appearance-none min-w-[1ex] field-sizing-content bg-transparent border-b">
-                            <option value="rectangular">rectangular</option>
-                            <option value="unrooted">unrooted</option>
-                            <option value="circular">circular</option>
-                        </select>
+                        <WSelect :options="['rectangular', 'unrooted', 'circular']" v-model="config.layout" />
                         <div class="col-span-full">
                             tip extension:
                             <WInput type="number" v-model.number="config.display[config.layout].tip_extension"
@@ -330,7 +323,7 @@ async function openAsPdf(svgXml) {
                     <div class="grid grid-cols-2 ml-2">
                         <div class="col-span-full">
                             width:
-                            <WInput type="number" v-model.int.lazy="w" :step="10" class="w-[6ch]" />
+                            <WInput type="number" v-model.lazy="w" :step="10 / precision" class="w-[6ch]" />
                             <select v-model="config.display[config.layout].unit"
                                 class="appearance-none min-w-[1ex] field-sizing-content bg-transparent border-b">
                                 <option v-for="_, u in pxToUnit">{{ u }}</option>
@@ -338,7 +331,7 @@ async function openAsPdf(svgXml) {
                         </div>
                         <div class="col-span-full">
                             height:
-                            <WInput type="number" v-model.int.lazy="h" :step="10" class="w-[6ch]" />
+                            <WInput type="number" v-model.lazy="h" :step="10 / precision" class="w-[6ch]" />
                             <select v-model="config.display[config.layout].unit"
                                 class="appearance-none min-w-[1ex] field-sizing-content bg-transparent border-b">
                                 <option v-for="_, u in pxToUnit">{{ u }}</option>
@@ -406,100 +399,105 @@ async function openAsPdf(svgXml) {
                         </template>
                         <p>pick a node by clicking at the node circle</p>
                     </Popover>
-                </template>
-                <div class="ml-2">
-                    <Popover mode="hover" variant="tooltip" inline>
+                    <Popover mode="hover" variant="tooltip" trigger-class="float-right mr-1">
                         <template #trigger>
                             <button class="align-middle rounded-md px-1 py-1 hover:bg-current/5 whitespace-nowrap"
                                 @click="console.info(activeNode)">
-                                <Icon icon="lucide:search-code" class="text-lg" />
+                                <Icon icon="lucide:search-code" />
                             </button>
                         </template>
                         <p>dump node to console</p>
                     </Popover>
-                    <Popover mode="hover" variant="tooltip" inline v-if="activeNode?.parent">
+                    <Popover mode="hover" variant="tooltip" trigger-class="float-right mr-1" v-if="activeNode?.parent">
                         <template #trigger>
                             <button class="align-middle rounded-md px-1 py-1 hover:bg-current/5"
                                 @click="activeNode = activeNode.parent">
-                                <Icon icon="lucide:git-merge" class="text-lg" />
+                                <Icon icon="lucide:git-merge" />
                             </button>
                         </template>
                         <p>select parent node</p>
                     </Popover>
-                </div>
+                </template>
                 <div class="overflow-auto">
                     <WidgetJsonTable :data="nodeInfo" v-if="nodeInfo" />
                 </div>
             </WDetails>
             <WDetails summary-class="bg-current/10" open>
-                <template #summary>node attributes</template>
+                <template #summary>
+                    node attributes
+                    <Popover mode="hover" variant="tooltip" side="left" trigger-class="float-right mr-1">
+                        <template #trigger>
+                            <button class="align-middle rounded-md px-1 py-1 hover:bg-current/5"
+                                @click="aes_panel_tab = 'color'">
+                                <Icon icon="lucide:square-function" />
+                            </button>
+                        </template>
+                        <p>apply custom function</p>
+                    </Popover>
+                </template>
                 <div class="flex flex-col px-2 whitespace-nowrap">
                     global
                     <hr class="text-gray-300">
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="color" v-model="activeNode.attributes.color" type="color" label="color" />
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="color"
+                        v-model="activeNode.attributes.color" type="color" label="color" />
                     point
                     <hr class="text-gray-300">
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="point_color" v-model="activeNode.attributes.point_color" type="color" label="color" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="point_size" v-model="activeNode.attributes.point_size" type="number" :min="1" :step="1"
-                        placeholder="6" label="size" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="point_shape" v-model="activeNode.attributes.point_shape" type="option"
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="point_color"
+                        v-model="activeNode.attributes.point_color" type="color" label="color" />
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="point_size"
+                        v-model="activeNode.attributes.point_size" type="number" :min="1" :step="1" placeholder="6"
+                        label="size" />
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="point_shape"
+                        v-model="activeNode.attributes.point_shape" type="option" placeholder="circle"
                         :options="['circle', 'square', 'triangle', 'diamond']" label="shape" />
                     branch
                     <hr class="text-gray-300">
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="branch_color" v-model="activeNode.attributes.branch_color" type="color" label="color" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="branch_width" v-model="activeNode.attributes.branch_width" type="number" :min="1" :step="1"
-                        placeholder="1" label="line width" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="branch_linetype" v-model="activeNode.attributes.branch_linetype" type="option"
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="branch_color"
+                        v-model="activeNode.attributes.branch_color" type="color" label="color" />
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="branch_width"
+                        v-model="activeNode.attributes.branch_width" type="number" :min="1" :step="1" placeholder="1"
+                        label="line width" />
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="branch_linetype"
+                        v-model="activeNode.attributes.branch_linetype" type="option"
                         :options="['solid', 'dashed', 'dotted', 'dotdash', 'longdash', 'twodash']" placeholder="solid"
                         label="line type" />
                     text
                     <hr class="text-gray-300">
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="text_label" v-model="activeNode.attributes.text_label" type="text"
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="text_label"
+                        v-model="activeNode.attributes.text_label" type="text"
                         :placeholder="activeNode.label ?? activeNode.name ?? '<empty>'" label="label" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="text_color" v-model="activeNode.attributes.text_color" type="color" label="color" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" @panel="toggleAesPanel"
-                        aes="text_size" v-model="activeNode.attributes.text_size" type="number" :min="1" :step="1"
-                        placeholder="4" label="size" />
-                    <template v-if="config.display[config.layout].show_node_labels">
-                        node labels
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="text_color"
+                        v-model="activeNode.attributes.text_color" type="color" label="color" />
+                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="text_size"
+                        v-model="activeNode.attributes.text_size" type="number" :min="1" :step="1" placeholder="4"
+                        label="size" />
+                    <template v-if="config.display[config.layout].show_node_labels && !activeNode.isTip">
+                        label
                         <hr class="text-gray-300">
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="node_anchor_x"
+                            v-model="activeNode.attributes.node_anchor_x" type="number" :step="0.1" placeholder="0.5"
+                            label="anchor x" />
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="node_anchor_y"
+                            v-model="activeNode.attributes.node_anchor_y" type="number" :step="0.1" placeholder="0.5"
+                            label="anchor y" />
                         <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
-                            @panel="toggleAesPanel" aes="node_anchor_x" v-model="activeNode.attributes.node_anchor_x"
-                            type="number" :step="0.1" placeholder="0.5" label="anchor x" />
+                            aes="node_translate_x" v-model="activeNode.attributes.node_translate_x" type="number"
+                            :step="0.1" placeholder="0" label="translate x" />
                         <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
-                            @panel="toggleAesPanel" aes="node_anchor_y" v-model="activeNode.attributes.node_anchor_y"
-                            type="number" :step="0.1" placeholder="0.5" label="anchor y" />
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
-                            @panel="toggleAesPanel" aes="node_translate_x"
-                            v-model="activeNode.attributes.node_translate_x" type="number" :step="0.1" placeholder="0"
-                            label="translate x" />
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
-                            @panel="toggleAesPanel" aes="node_translate_y"
-                            v-model="activeNode.attributes.node_translate_y" type="number" :step="0.1" placeholder="0"
-                            label="translate y" />
+                            aes="node_translate_y" v-model="activeNode.attributes.node_translate_y" type="number"
+                            :step="0.1" placeholder="0" label="translate y" />
                     </template>
-                    <template v-if="config.display[config.layout].show_node_bars">
-                        bars
+                    <template v-if="config.display[config.layout].show_node_bars && !activeNode.isTip">
+                        bar
                         <hr class="text-gray-300">
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
-                            @panel="toggleAesPanel" aes="bar_range" v-model="activeNode.attributes.bar_range"
-                            type="range" label="range" />
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
-                            @panel="toggleAesPanel" aes="bar_width" v-model="activeNode.attributes.bar_width"
-                            type="number" :min="1" :step="1"
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="bar_range"
+                            v-model="activeNode.attributes.bar_range" type="range" label="range" />
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="bar_width"
+                            v-model="activeNode.attributes.bar_width" type="number" :min="1" :step="1"
                             :placeholder="(activeNode.attributes.branch_width || 1) * 5" label="width" />
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
-                            @panel="toggleAesPanel" aes="bar_color" v-model="activeNode.attributes.bar_color"
-                            type="color" label="color" placeholder="#0000FF88" />
+                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="bar_color"
+                            v-model="activeNode.attributes.bar_color" type="color" label="color"
+                            placeholder="#0000FF88" />
                     </template>
                 </div>
             </WDetails>

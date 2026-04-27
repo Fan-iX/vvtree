@@ -2,6 +2,7 @@
 defineOptions({ inheritAttrs: false })
 import Popover from './widget/Popover.vue'
 import WInput from './widget/Input.vue'
+import WSelect from './widget/Select.vue'
 import WSelectInput from './widget/SelectInput.vue'
 import WRangeInput from './widget/RangeInput.vue'
 import WColorPicker from './widget/ColorPicker.vue'
@@ -13,7 +14,7 @@ const { aes, type, label } = defineProps({
 })
 const model = defineModel()
 
-const emit = defineEmits(['spread', 'gather', 'panel'])
+const emit = defineEmits(['spread', 'gather'])
 </script>
 
 <template>
@@ -23,6 +24,7 @@ const emit = defineEmits(['spread', 'gather', 'panel'])
                 {{ label }}:
                 <WInput type="number" v-if="type == 'number'" v-bind="$attrs" v-model="model" />
                 <WColorPicker v-else-if="type == 'color'" v-bind="$attrs" v-model="model" />
+                <WSelect v-else-if="type == 'select'" v-bind="$attrs" v-model="model" />
                 <WSelectInput v-else-if="type == 'option'" v-bind="$attrs" v-model="model" />
                 <WRangeInput v-else-if="type == 'range'" v-bind="$attrs" v-model="model" />
                 <WInput v-else-if="type == 'text'" v-bind="$attrs" v-model="model" />
@@ -44,14 +46,6 @@ const emit = defineEmits(['spread', 'gather', 'panel'])
                 </button>
             </template>
             <p>gather from tips</p>
-        </Popover>
-        <Popover mode="hover" variant="tooltip" side="left">
-            <template #trigger>
-                <button class="align-middle rounded-md px-1 py-1 hover:bg-current/5" @click="emit('panel', aes)">
-                    <Icon icon="lucide:square-function" />
-                </button>
-            </template>
-            <p>apply custom function</p>
         </Popover>
     </div>
 </template>
