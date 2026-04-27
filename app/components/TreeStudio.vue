@@ -167,19 +167,9 @@ function onNodeClick(e, c, d) {
     activeNode.value = d
 }
 
-function gatherFromDescendants(aes) {
-    activeNode.value.allNodes.toReversed().filter(n => !n.isTip).forEach(n => {
-        let attr = n.children[0]?.attributes[aes]
-        if (n.children.every(c => c.attributes[aes] === attr))
-            n.attributes[aes] = attr
-    })
-}
-function applyToDescendants(aes) {
-    let val = activeNode.value.attributes[aes]
-    activeNode.value.allChildren.forEach(n => n.attributes[aes] = val)
-}
 const aes_panel_tab = ref(null)
 
+const attributeTargets = ref("current node")
 function resetAesthetics(aes) {
     if (config.value.aesthetics?.[aes]) delete config.value.aesthetics[aes]
     tree.value.allNodes.forEach(n => n.attributes[aes] = null)
@@ -284,7 +274,8 @@ async function openAsPdf(svgXml) {
                     layout
                     <hr class="text-gray-300">
                     <div class="grid grid-cols-2 ml-2 justify-items-start">
-                        <WSelect :options="['rectangular', 'unrooted', 'circular']" v-model="config.layout" />
+                        <WSelect :options="['rectangular', 'unrooted', 'circular']" v-model="config.layout"
+                            class="appearance-none min-w-[1ex] field-sizing-content bg-transparent border-b" />
                         <div class="col-span-full">
                             tip extension:
                             <WInput type="number" v-model.number="config.display[config.layout].tip_extension"
@@ -424,7 +415,9 @@ async function openAsPdf(svgXml) {
             </WDetails>
             <WDetails summary-class="bg-current/10" open>
                 <template #summary>
-                    node attributes
+                    attributes of
+                    <WSelect :options="['current node', 'descendant nodes', 'descendant tips', 'all nodes', 'all tips']"
+                        v-model="attributeTargets" />
                     <Popover mode="hover" variant="tooltip" side="left" trigger-class="float-right mr-1">
                         <template #trigger>
                             <button class="align-middle rounded-md px-1 py-1 hover:bg-current/5"
@@ -438,66 +431,55 @@ async function openAsPdf(svgXml) {
                 <div class="flex flex-col px-2 whitespace-nowrap">
                     global
                     <hr class="text-gray-300">
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="color"
-                        v-model="activeNode.attributes.color" type="color" label="color" />
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="color" type="color"
+                        label="color" />
                     point
                     <hr class="text-gray-300">
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="point_color"
-                        v-model="activeNode.attributes.point_color" type="color" label="color" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="point_size"
-                        v-model="activeNode.attributes.point_size" type="number" :min="1" :step="1" placeholder="6"
-                        label="size" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="point_shape"
-                        v-model="activeNode.attributes.point_shape" type="option" placeholder="circle"
-                        :options="['circle', 'square', 'triangle', 'diamond']" label="shape" />
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="point_color" type="color"
+                        label="color" />
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="point_size" type="number"
+                        :min="1" :step="1" placeholder="6" label="size" />
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="point_shape" type="option"
+                        placeholder="circle" :options="['circle', 'square', 'triangle', 'diamond']" label="shape" />
                     branch
                     <hr class="text-gray-300">
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="branch_color"
-                        v-model="activeNode.attributes.branch_color" type="color" label="color" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="branch_width"
-                        v-model="activeNode.attributes.branch_width" type="number" :min="1" :step="1" placeholder="1"
-                        label="line width" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="branch_linetype"
-                        v-model="activeNode.attributes.branch_linetype" type="option"
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="branch_color" type="color"
+                        label="color" />
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="branch_width" type="number"
+                        :min="1" :step="1" placeholder="1" label="line width" />
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="branch_linetype" type="option"
                         :options="['solid', 'dashed', 'dotted', 'dotdash', 'longdash', 'twodash']" placeholder="solid"
                         label="line type" />
                     text
                     <hr class="text-gray-300">
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="text_label"
-                        v-model="activeNode.attributes.text_label" type="text"
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="text_label" type="text"
                         :placeholder="activeNode.label ?? activeNode.name ?? '<empty>'" label="label" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="text_color"
-                        v-model="activeNode.attributes.text_color" type="color" label="color" />
-                    <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="text_size"
-                        v-model="activeNode.attributes.text_size" type="number" :min="1" :step="1" placeholder="4"
-                        label="size" />
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="text_color" type="color"
+                        label="color" />
+                    <AttributeInput :node="activeNode" :target="attributeTargets" aes="text_size" type="number" :min="1"
+                        :step="1" placeholder="4" label="size" />
                     <template v-if="config.display[config.layout].show_node_labels && !activeNode.isTip">
                         label
                         <hr class="text-gray-300">
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="node_anchor_x"
-                            v-model="activeNode.attributes.node_anchor_x" type="number" :step="0.1" placeholder="0.5"
-                            label="anchor x" />
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="node_anchor_y"
-                            v-model="activeNode.attributes.node_anchor_y" type="number" :step="0.1" placeholder="0.5"
-                            label="anchor y" />
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
-                            aes="node_translate_x" v-model="activeNode.attributes.node_translate_x" type="number"
-                            :step="0.1" placeholder="0" label="translate x" />
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants"
-                            aes="node_translate_y" v-model="activeNode.attributes.node_translate_y" type="number"
-                            :step="0.1" placeholder="0" label="translate y" />
+                        <AttributeInput :node="activeNode" :target="attributeTargets" aes="node_anchor_x" type="number"
+                            :step="0.1" placeholder="0.5" label="anchor x" />
+                        <AttributeInput :node="activeNode" :target="attributeTargets" aes="node_anchor_y" type="number"
+                            :step="0.1" placeholder="0.5" label="anchor y" />
+                        <AttributeInput :node="activeNode" :target="attributeTargets" aes="node_translate_x"
+                            type="number" :step="0.1" placeholder="0" label="translate x" />
+                        <AttributeInput :node="activeNode" :target="attributeTargets" aes="node_translate_y"
+                            type="number" :step="0.1" placeholder="0" label="translate y" />
                     </template>
                     <template v-if="config.display[config.layout].show_node_bars && !activeNode.isTip">
                         bar
                         <hr class="text-gray-300">
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="bar_range"
-                            v-model="activeNode.attributes.bar_range" type="range" label="range" />
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="bar_width"
-                            v-model="activeNode.attributes.bar_width" type="number" :min="1" :step="1"
-                            :placeholder="(activeNode.attributes.branch_width || 1) * 5" label="width" />
-                        <AttributeInput @spread="applyToDescendants" @gather="gatherFromDescendants" aes="bar_color"
-                            v-model="activeNode.attributes.bar_color" type="color" label="color"
-                            placeholder="#0000FF88" />
+                        <AttributeInput :node="activeNode" :target="attributeTargets" aes="bar_range" type="range"
+                            label="range" />
+                        <AttributeInput :node="activeNode" :target="attributeTargets" aes="bar_width" type="number"
+                            :min="1" :step="1" :placeholder="(activeNode.attributes.branch_width || 1) * 5"
+                            label="width" />
+                        <AttributeInput :node="activeNode" :target="attributeTargets" aes="bar_color" type="color"
+                            label="color" placeholder="#0000FF88" />
                     </template>
                 </div>
             </WDetails>
