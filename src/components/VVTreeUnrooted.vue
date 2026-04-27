@@ -8,6 +8,7 @@ const {
     branchLength, timeScale,
     color, pointSize, textSize, branchWidth, linetype, theme: $theme,
     showNodeLabels, reverseLabels, labelOffset, tipExtension,
+    activeNode,
 } = defineProps({
     branchLength: { type: Boolean, default: true },
     timeScale: Boolean,
@@ -24,6 +25,7 @@ const {
     tipExtension: { type: Number, default: 0 },
     angleStart: { type: Number, default: 0 },
     angleExpand: { type: Number, default: 360 },
+    activeNode: VVTreeNode,
 })
 const tree = defineModel("tree", { type: VVTreeNode })
 
@@ -126,6 +128,9 @@ const fn_node_translate_y = d => d.attributes?.node_translate_y
             <VVAxisY :expand-add="0" :expand-mult="0" position="none" />
             <VVAxisX :expand-mult="0" v-bind="axisBinding" />
         </template>
+        <VVGeomPoint v-if="activeNode" :data="[activeNode]" :x="d => d.$unrooted.x" :y="d => d.$unrooted.y"
+            :size="fn_point_size" color="#ff7f7f" stroke="#ff7f7f" :linewidth="1" :shape="fn_point_shape"
+            class="vvplot-interactive pointer-events-none" render="svg" />
         <VVGeomSegment :data="branchNodes" :x="d => d.$unrooted.x" :y="d => d.$unrooted.y"
             :xend="d => d.parent.$unrooted.x" :yend="d => d.parent.$unrooted.y" :color="fn_branch_color"
             :linewidth="fn_branch_width" :linetype="fn_branch_linetype" fill="none" />

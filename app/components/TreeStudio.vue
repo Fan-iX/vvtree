@@ -39,7 +39,7 @@ watch(() => config.value.layout, l => {
 const zoom_scale = computed(() => config.value?.display?.[config.value.layout]?.zoom_scale ?? 1)
 
 function buildTree() {
-    tree.value = VVTreeNode.parseNewick(config.value.data) ?? new VVTreeNode()
+    activeNode.value = tree.value = VVTreeNode.parseNewick(config.value.data) ?? new VVTreeNode()
 }
 
 async function onpaste(e) {
@@ -77,7 +77,8 @@ async function onpaste(e) {
         emit('load', trees.reverse())
     }
 }
-async function oncopy(e) {
+function oncopy(e) {
+    if (window.getSelection().rangeCount > 0) return
     e.preventDefault()
     e.clipboardData.setData('text/plain', tree.value.toNewickString({ attribute: false }))
     e.clipboardData.setData('vvtree-tree-list', JSON.stringify([config.value]))
@@ -263,7 +264,7 @@ async function openAsPdf(svgXml) {
                 <div :style="{ transform: `scale(${zoom_scale})` }" class="origin-top-left w-max h-max">
                     <Tree ref="tree-ref" v-model:tree="tree" v-model:width="config.display[config.layout].width"
                         v-model:height="config.display[config.layout].height" v-bind="vBind" @wheel="onWheel"
-                        @nodeclick.prevent="onNodeClick" resize />
+                        :active-node="activeNode" @nodeclick.prevent="onNodeClick" resize />
                 </div>
             </div>
         </div>
