@@ -40,8 +40,17 @@ export const palettes = {
     Alphabet: ["#AA0DFE", "#3283FE", "#85660D", "#782AB6", "#565656", "#1C8356", "#16FF32", "#F7E1A0", "#E2E2E2", "#1CBE4F", "#C4451C", "#DEA0FD", "#FE00FA", "#325A9B", "#FEAF16", "#F8A19F", "#90AD1C", "#F6222E", "#1CFFCE", "#2ED9FF", "#B10DA1", "#C075A6", "#FC1CBF", "#B00068", "#FBE426", "#FA0087"],
 }
 
-import { jsPDF } from "jspdf"
-import 'svg2pdf.js'
+export function svg2svg(svgXml) {
+    let svg = new DOMParser().parseFromString(
+        '<?xml version="1.0" standalone="no"?>\r\n' + svgXml,
+        "image/svg+xml"
+    ).documentElement
+    let style = document.createElement('style')
+    style.textContent = `@media print { @page { size: ${svg.width.baseVal.value / 96}in ${svg.height.baseVal.value / 96}in; margin: 0; } }`
+    svg.prepend(style)
+    let xml = new XMLSerializer().serializeToString(svg)
+    return new Blob([xml], { type: 'image/svg+xml' })
+}
 
 export function svg2png(svgXml, { dpi = 96 } = {}) {
     const { promise, resolve, reject } = Promise.withResolvers()
@@ -71,6 +80,60 @@ export function svg2png(svgXml, { dpi = 96 } = {}) {
     return promise
 }
 
+import { jsPDF } from "jspdf"
+import 'svg2pdf.js'
+
+function segmentText(text) {
+    function createTspan(content, fontFamily = "Noto Sans") {
+        let tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan")
+        tspan.textContent = content
+        tspan.setAttribute("font-family", fontFamily)
+        return tspan
+    }
+    let result = [], match, lastIndex = 0
+    const regex = /((?<SC>[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+)|(?<White>\s+))/gu
+    while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+            result.push(createTspan(text.substring(lastIndex, match.index), "Noto Sans"))
+        }
+        for (const cate in match.groups) {
+            if (match.groups[cate] == null) continue
+            if (cate == "White") {
+                if (result.length == 0) result.push(createTspan(match[0], "Noto Sans"))
+                else result[result.length - 1].textContent += match[0]
+            } else {
+                result.push(createTspan(match[0], `Noto Sans ${cate}`))
+            }
+        }
+        lastIndex = regex.lastIndex
+        if (match.index === regex.lastIndex) regex.lastIndex++
+    }
+    if (lastIndex < text.length) result.push(createTspan(text.substring(lastIndex), "Noto Sans"))
+    return result
+}
+
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result.split(',')[1])
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+    })
+}
+
+async function cfetch(request) {
+    if ('caches' in window) {
+        const cache = await caches.open('font-assets')
+        let response = await cache.match(request)
+        if (response) return response
+        response = await fetch(request)
+        if (response.ok) await cache.put(request, response.clone())
+        return response
+    } else {
+        return fetch(request)
+    }
+}
+
 export async function svg2pdf(svgXml) {
     let svg = new DOMParser().parseFromString(
         '<?xml version="1.0" standalone="no"?>\r\n' + svgXml,
@@ -94,6 +157,34 @@ export async function svg2pdf(svgXml) {
         el.removeAttribute('dominant-baseline')
         el.setAttribute('dy', "0.35em")
     })
+    const iter = document.createNodeIterator(svg, NodeFilter.SHOW_TEXT)
+    let nodes = [], node
+    while (node = iter.nextNode()) nodes.push(node)
+    for (const node of nodes) {
+        if (node.textContent.trim()) {
+            node.replaceWith(...segmentText(node.textContent))
+        }
+    }
+    function registerFont(name, url) {
+        return cfetch(url).then(r => r.blob()).then(blobToBase64)
+            .then(data => doc.addFileToVFS(name, data))
+    }
+    if (svg.querySelector('[font-family="Noto Sans"]')) {
+        await registerFont('NotoSans-Regular.ttf', "/assets/fonts/NotoSans/NotoSans-Regular.ttf")
+        await registerFont('NotoSans-Bold.ttf', "/assets/fonts/NotoSans/NotoSans-Bold.ttf")
+        await registerFont('NotoSans-Italic.ttf', "/assets/fonts/NotoSans/NotoSans-Italic.ttf")
+        await registerFont('NotoSans-BoldItalic.ttf', "/assets/fonts/NotoSans/NotoSans-BoldItalic.ttf")
+        doc.addFont('NotoSans-Regular.ttf', 'Noto Sans', 'normal')
+        doc.addFont('NotoSans-Bold.ttf', 'Noto Sans', 'bold')
+        doc.addFont('NotoSans-Italic.ttf', 'Noto Sans', 'italic')
+        doc.addFont('NotoSans-BoldItalic.ttf', 'Noto Sans', 'bolditalic')
+    }
+    if (svg.querySelector('[font-family="Noto Sans SC"]')) {
+        await registerFont('NotoSansSC-Regular.ttf', "/assets/fonts/NotoSans/NotoSansSC-Regular.ttf")
+        await registerFont('NotoSansSC-Bold.ttf', "/assets/fonts/NotoSans/NotoSansSC-Bold.ttf")
+        doc.addFont('NotoSansSC-Regular.ttf', 'Noto Sans SC', 'normal')
+        doc.addFont('NotoSansSC-Bold.ttf', 'Noto Sans SC', 'bold')
+    }
     svg.querySelectorAll('[transform-origin]').forEach(el => {
         const originAttr = el.getAttribute('transform-origin').trim()
         const transformAttr = el.getAttribute('transform') || ''
@@ -109,16 +200,4 @@ export async function svg2pdf(svgXml) {
     await doc.svg(svg)
     svg = null
     return doc.output('blob')
-}
-
-export function svg2svg(svgXml) {
-    let svg = new DOMParser().parseFromString(
-        '<?xml version="1.0" standalone="no"?>\r\n' + svgXml,
-        "image/svg+xml"
-    ).documentElement
-    let style = document.createElement('style')
-    style.textContent = `@media print { @page { size: ${svg.width.baseVal.value / 96}in ${svg.height.baseVal.value / 96}in; margin: 0; } }`
-    svg.prepend(style)
-    let xml = new XMLSerializer().serializeToString(svg)
-    return new Blob([xml], { type: 'image/svg+xml' })
 }
