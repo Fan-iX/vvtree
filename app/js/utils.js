@@ -91,7 +91,7 @@ function segmentText(text) {
         return tspan
     }
     let result = [], match, lastIndex = 0
-    const regex = /((?<SC>[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+)|(?<White>\s+))/gu
+    const regex = /((?<SC>[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+)|(?<Arabic>[\p{Script=Arabic}\p{Mark}]+)|(?<White>\s+))/gu
     while ((match = regex.exec(text)) !== null) {
         if (match.index > lastIndex) {
             result.push(createTspan(text.substring(lastIndex, match.index), "Noto Sans"))
@@ -184,6 +184,12 @@ export async function svg2pdf(svgXml) {
         await registerFont('NotoSansSC-Bold.ttf', "/assets/fonts/NotoSans/NotoSansSC-Bold.ttf")
         doc.addFont('NotoSansSC-Regular.ttf', 'Noto Sans SC', 'normal')
         doc.addFont('NotoSansSC-Bold.ttf', 'Noto Sans SC', 'bold')
+    }
+    if (svg.querySelector('[font-family="Noto Sans Arabic"]')) {
+        await registerFont('NotoSansArabic-Regular.ttf', "/assets/fonts/NotoSans/NotoSansArabic-Regular.ttf")
+        await registerFont('NotoSansArabic-Bold.ttf', "/assets/fonts/NotoSans/NotoSansArabic-Bold.ttf")
+        doc.addFont('NotoSansArabic-Regular.ttf', 'Noto Sans Arabic', 'normal')
+        doc.addFont('NotoSansArabic-Bold.ttf', 'Noto Sans Arabic', 'bold')
     }
     svg.querySelectorAll('[transform-origin]').forEach(el => {
         const originAttr = el.getAttribute('transform-origin').trim()
