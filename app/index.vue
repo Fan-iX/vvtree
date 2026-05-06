@@ -94,13 +94,13 @@ function reorderTree(i, j) {
             <div class="flex-1 overflow-auto">
                 <WidgetDragList @reorder="reorderTree">
                     <div class="flex flex-row flex-1 overflow-auto items-center" v-for="item, i in tree_data">
-                        <Icon icon="lucide:x" @click="remove_tree(i)" class="hover:text-red-500 cursor-pointer" />
                         <div @click="idx = i" class="flex-1 overflow-auto scrollbar-none whitespace-nowrap"
                             :class="i == idx ? 'bg-gray-200 hover:bg-gray-300 smooth-scroll' : 'hover:bg-gray-100 cursor-pointer'">
                             <input v-if="i == idx" v-model="item.name"
                                 class="outline-none bg-gray-200 field-sizing-content border-b" />
                             <span v-else class="cursor-text" :title="item.name">{{ item.name }}</span>
                         </div>
+                        <Icon icon="lucide:x" @click="remove_tree(i)" class="hover:text-red-500 cursor-pointer" />
                     </div>
                 </WidgetDragList>
             </div>

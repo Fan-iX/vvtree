@@ -74,6 +74,9 @@ watch([tree, () => layout, () => branchLength], prerender, { immediate: true })
 async function onNodeClick(e, c, d) {
     if (e.button == 2) {
         activeNode.value = d
+        await nextTick()
+    }
+    if (activeNode.value == d) {
         let action = await nodeMenu.value.show(d)
         if (action == 'reroot') {
             emit('change', tree.value = TreeNode.reroot(d))
@@ -119,6 +122,7 @@ async function onNodeClick(e, c, d) {
             }
         }
     }
+    if (e.button == 0) activeNode.value = d
 }
 const width = defineModel('width', { type: Number })
 const height = defineModel('height', { type: Number })

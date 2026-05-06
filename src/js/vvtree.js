@@ -212,10 +212,11 @@ export class VVTreeNode extends TreeNode {
             tip_label = true, node_label = true,
             branch_length = true, annotation = true,
             attribute = true,
+            use_attribute_label = false,
         } = config
         let s_label = "", s_branch_length = "", s_annotations = "", s_children = "", s_attributes = "";
         if (tip_label && this.isTip || node_label && !this.isTip) {
-            s_label = this.name || "";
+            s_label = (use_attribute_label ? this.attributes.text_label : "") || this.name || "";
         }
         if (branch_length && this.branch_length != null) {
             s_branch_length = `:${this.branch_length}`

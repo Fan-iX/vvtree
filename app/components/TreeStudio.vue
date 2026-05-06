@@ -199,11 +199,11 @@ function openAsSvg(svgXml) {
     openContentWindow(blob)
 }
 async function downloadAsPng(svgXml, options) {
-    let blob = await svg2png(svgXml, { dpi: config.value.display[config.value.layout]?.dpi ?? 96 })
+    let blob = await svg2png(svgXml, { dpi: config.value.display[config.value.layout]?.dpi ?? 300 })
     downloadContent(blob, options)
 }
 async function openAsPng(svgXml) {
-    let blob = await svg2png(svgXml, { dpi: config.value.display[config.value.layout]?.dpi ?? 96 })
+    let blob = await svg2png(svgXml, { dpi: config.value.display[config.value.layout]?.dpi ?? 300 })
     openContentWindow(blob)
 }
 async function downloadAsPdf(svgXml, options) {
@@ -330,7 +330,7 @@ async function openAsPdf(svgXml) {
                         <div>
                             DPI:
                             <WInput type="number" v-model.int.lazy="config.display[config.layout].dpi" :step="24"
-                                :min="72" class="w-[5ch]" :placeholder="96" />
+                                :min="72" class="w-[5ch]" :placeholder="300" />
                             <Popover inline variant="tooltip" side="top">
                                 <template #trigger>
                                     <Icon icon="lucide:x" @click="delete config.display[config.layout].dpi"
