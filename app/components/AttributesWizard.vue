@@ -13,7 +13,7 @@ const { config, node } = defineProps({
 })
 const emit = defineEmits(['apply', 'clear'])
 
-const inventory = useLocalStorage('tree-studio-aes-inventory', {})
+const inventory = useLocalStorage('tree-studio-attr-inventory', {})
 
 const attributes = [
     'color', 'point_color', 'point_size',
@@ -22,49 +22,31 @@ const attributes = [
     'bar_range', 'bar_color', 'bar_width',
     'anchor_x', 'anchor_y', 'translate_x', 'translate_y',
 ]
-let colorFn = `node => {
-    let categories = [
-        (n) => n.name.startsWith("prefix"),
-        ["val1", "val2"]
-    ]
-    let pal = palettes.Tableau10
-    for (let i = 0; i < categories.length; i++) {
-        let cate = categories[i]
-        let fn = tip => tip.name == cate
-        if (typeof cate == "function") fn = cate
-        if (Array.isArray(cate)) fn = tip => cate.includes?.(tip.name)
-        if (typeof fn == "function" && node.allTips.every(fn)) return pal[i]
-    }
-}`
-const defaultFn = {
-    color: colorFn,
-    point_color: colorFn,
-    point_size: "node => +node.name > 90 ? 6 : 0",
-    point_shape: "node => 'circle'",
-    branch_color: colorFn,
-    branch_width: "node => 1",
-    branch_linetype: "node => 'solid'",
-    text_color: colorFn,
-    text_size: "node => 6",
-    text_label: "node => node.isTip ? node.name : ''",
-    bar_range: `node => {
-    let CI = node.annotations?.['height_95%_HPD'] ?? node.annotations?.['reltime_95%_CI']
-    let height = node.height
-    return CI?.map(v => v - height)
-}`,
-    bar_color: "node => '#0000FF88'",
-    bar_width: "node => 1",
-    anchor_x: "node => node.isTip ? 0.5 : 0",
-    anchor_y: "node => 0.5",
-    translate_x: "node => 0",
-    translate_y: "node => 0",
+const defaultValue = {
+    color: "node1\tred\n...etc\tblue",
+    point_color: "node1\tred\n...etc\tblue",
+    point_size: "node1\t0\n...etc\t6",
+    point_shape: "node1\tcircle\n...etc\tsquare",
+    branch_color: "node1\tred\n...etc\tblue",
+    branch_width: "node1\t2\n...etc\t1",
+    branch_linetype: "node1\tdashed\n...etc\tsolid",
+    text_color: "node1\tred\n...etc\tblue",
+    text_size: "node1\t8\n...etc\t6",
+    text_label: "node1\tlabel1\n...etc\t",
+    bar_range: `node1\t0\t1\n...etc\tnull`,
+    bar_color: "node1\t#FF000088\n...etc\t#0000FF88",
+    bar_width: "node1\t1.5\n...etc\t1",
+    anchor_x: "node1\t0.5\n...etc\t0",
+    anchor_y: "node1\t0.5\n...etc\t0.5",
+    translate_x: "node1\t10\n...etc\t0",
+    translate_y: "node1\t10\n...etc\t0",
 }
 
+
 const aes = ref("color")
-const aesFuncText = ref("")
 const valuemap = ref("")
 
-watch(aes, v => aesFuncText.value = config?.[v] ?? defaultFn[v] ?? "", { immediate: true })
+watch(aes, v => valuemap.value = config?.[v] ?? defaultValue[v] ?? "", { immediate: true })
 function saveValue(key, value) {
     inventory.value[key] ??= []
     if (inventory.value[key].some?.(x => x.value == value)) return
@@ -76,18 +58,28 @@ function resetAttributes() {
     if (!node?.root) return
     node.root.allNodes.forEach(n => n.attributes[aes.value] = null)
 }
-function applyAesthetics(nodes) {
-    config[aes.value] = aesFuncText.value
+function autoType(val) {
+    if (!isNaN(val)) return +val
+    else if (val.toLowerCase() == "null") return null
+    else if (val.toLowerCase() == "true") return true
+    else if (val.toLowerCase() == "false") return false
+    return val
+}
+function applyAttributes(nodes) {
+    config[aes.value] = valuemap.value
     if (!nodes?.length) return
-    try {
-        let fn = new Function("palettes", "return " + aesFuncText.value)(palettes)
-        nodes.forEach(n => n.attributes[aes.value] = fn(n))
-    } catch (e) { console.error(e) }
+    let map = {}
+    for (let line of valuemap.value.trim().split("\n")) {
+        let [n, ...val] = line.split(/\t/)
+        if (val.length == 1) map[n] = autoType(val[0])
+        else map[n] = val.map(autoType)
+    }
+    nodes.forEach(n => n.attributes[aes.value] = map[n.name] ?? map['...etc'])
 }
 </script>
 
 <template>
-    <FloatingPanel :width="600" :height="400" title="Custom aesthetics function">
+    <FloatingPanel :width="600" :height="400" title="Apply attribute map">
         <div class="flex flex-col h-full">
             <div class="grid grid-cols-[auto_2fr_1fr] grid-rows-[auto_1fr] grid-flow-col overflow-auto flex-1">
                 <span class="font-bold">attribute</span>
@@ -98,24 +90,27 @@ function applyAesthetics(nodes) {
                     </button>
                 </div>
                 <span class="font-bold">
-                    function
+                    map
                     <Popover mode="hover" variant="tooltip" inline>
                         <template #trigger>
                             <Icon icon="lucide:circle-question-mark"
                                 class="text-blue-500 cursor-help inline-block align-middle" />
                         </template>
-                        <p>the function will be applied to compute attribute values for each node</p>
+                        <p>syntax:</p>
+                        <pre>node_name1&#9;attribute_value1
+node_name2&#9;attribute_value2
+...etc&#9;default_value</pre>
                     </Popover>
                 </span>
-                <WTextarea v-model="aesFuncText" class="flex-2 whitespace-nowrap" />
+                <WTextarea v-model="valuemap" class="whitespace-nowrap flex-2" />
                 <div>
                     <span class="font-bold">presets</span>
                     <button class="float-right inline-block align-middle rounded-md px-1 py-1 hover:bg-current/5"
-                        @click="saveValue(aes, aesFuncText)">
+                        @click="saveValue(aes, valuemap)">
                         <Icon icon="lucide:save" />
                     </button>
                 </div>
-                <WidgetInventory v-model:inventory="inventory[aes]" v-model="aesFuncText" class="overflow-auto" />
+                <WidgetInventory v-model:inventory="inventory[aes]" v-model="valuemap" class="overflow-auto" />
             </div>
             <div class="flex whitespace-nowrap">
                 <div>
@@ -130,7 +125,7 @@ function applyAesthetics(nodes) {
                     <div class="flex float-right">
                         <button
                             class="text-white bg-green-500 cursor-pointer rounded-md px-2 py-1 hover:bg-green-500/75 rounded-r-none"
-                            @click="applyAesthetics(node?.root?.allNodes)">
+                            @click="applyAttributes(node?.root?.allNodes)">
                             Apply
                         </button>
                         <Popover align="end" variant="contextmenu" trigger-class="flex">
@@ -141,15 +136,15 @@ function applyAesthetics(nodes) {
                                 </button>
                             </template>
                             <div class="flex flex-col">
-                                <button @click="applyAesthetics(node?.allNodes)"
+                                <button @click="applyAttributes(node?.allNodes)"
                                     class="px-2 py-1 hover:bg-current/5 text-left">
                                     Apply to current node and descendants
                                 </button>
-                                <button @click="applyAesthetics(node?.root?.allTips)"
+                                <button @click="applyAttributes(node?.root?.allTips)"
                                     class="px-2 py-1 hover:bg-current/5 text-left">
                                     Apply to all tip nodes
                                 </button>
-                                <button @click="applyAesthetics(node?.allTips)"
+                                <button @click="applyAttributes(node?.allTips)"
                                     class="px-2 py-1 hover:bg-current/5 text-left">
                                     Apply to tip nodes of current node
                                 </button>

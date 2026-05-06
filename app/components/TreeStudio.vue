@@ -7,6 +7,7 @@ import WDetails from './widget/Details.vue'
 import WCheckInput from './widget/CheckInput.vue'
 import Popover from './widget/Popover.vue'
 import AestheticsWizard from './AestheticsWizard.vue'
+import AttributeWizard from './AttributesWizard.vue'
 import AttributeInput from './AttributeInput.vue'
 import Tree from './Tree.vue'
 const emit = defineEmits(['load'])
@@ -24,6 +25,8 @@ watch([tree, config], ([nt, nc], [ot, oc]) => {
     if (nc != oc) {
         config.value.layout ??= 'rectangular'
         config.value.display ??= {}
+        config.value.aesthetics ??= {}
+        config.value.attributes ??= {}
         tree.value = VVTreeNode.parseNewick(nc.newick ?? nc.data) ?? new VVTreeNode()
         activeNode.value = tree.value
     } else {
@@ -164,30 +167,11 @@ const nodeInfo = computed(() => {
         annotations: activeNode.value.annotations,
     }
 }, { deep: true })
-function onNodeClick(e, c, d) {
-    activeNode.value = d
-}
 
-const aes_panel_tab = ref(null)
+const show_aes_wizard = ref(false)
+const show_attr_wizard = ref(false)
 
 const attributeTargets = ref("current node")
-function resetAesthetics(aes) {
-    if (config.value.aesthetics?.[aes]) delete config.value.aesthetics[aes]
-    tree.value.allNodes.forEach(n => n.attributes[aes] = null)
-}
-function applyAesthetics(range, aes, funcText) {
-    config.value.aesthetics ??= {}
-    config.value.aesthetics[aes] = funcText
-    let nodes = []
-    if (range == 'root') nodes = tree.value.allNodes.toReversed()
-    else if (range == 'active') nodes = activeNode.value.allNodes.toReversed()
-    else if (range == 'tips') nodes = tree.value?.allTips ?? []
-    else if (range == 'activetips') nodes = activeNode.value?.allTips ?? []
-    try {
-        let fn = new Function("palettes", "return " + funcText)(palettes)
-        nodes.forEach(n => n.attributes[aes] = fn(n))
-    } catch (e) { console.error(e) }
-}
 const pxToUnit = { "px": 1, "in": 1 / 96, "cm": 2.54 / 96, "mm": 25.4 / 96 }
 const precision = computed(() => 10 ** -Math.ceil(Math.log10(pxToUnit[config.value.display[config.value.layout].unit] ?? 1)))
 const unitRatio = computed(() => {
@@ -264,7 +248,7 @@ async function openAsPdf(svgXml) {
                 <div :style="{ transform: `scale(${zoom_scale})` }" class="origin-top-left w-max h-max">
                     <Tree ref="tree-ref" v-model:tree="tree" v-model:width="config.display[config.layout].width"
                         v-model:height="config.display[config.layout].height" v-bind="vBind" @wheel="onWheel"
-                        :active-node="activeNode" @nodeclick.prevent="onNodeClick" resize />
+                        v-model:active-node="activeNode" resize />
                 </div>
             </div>
         </div>
@@ -422,11 +406,20 @@ async function openAsPdf(svgXml) {
                     <Popover mode="hover" variant="tooltip" side="left" trigger-class="float-right mr-1">
                         <template #trigger>
                             <button class="align-middle rounded-md px-1 py-1 hover:bg-current/5"
-                                @click="aes_panel_tab = 'color'">
+                                @click="show_aes_wizard = !show_aes_wizard">
                                 <Icon icon="lucide:square-function" />
                             </button>
                         </template>
                         <p>apply custom function</p>
+                    </Popover>
+                    <Popover mode="hover" variant="tooltip" side="left" trigger-class="float-right">
+                        <template #trigger>
+                            <button class="align-middle rounded-md px-1 py-1 hover:bg-current/5"
+                                @click="show_attr_wizard = !show_attr_wizard">
+                                <Icon icon="lucide:table-properties" class="-scale-x-100" />
+                            </button>
+                        </template>
+                        <p>apply custom attribute mapping</p>
                     </Popover>
                 </template>
                 <div class="flex flex-col px-2 whitespace-nowrap">
@@ -566,7 +559,7 @@ async function openAsPdf(svgXml) {
                 </div>
             </WDetails>
         </div>
-        <AestheticsWizard :config="config.aesthetics" v-model:tab="aes_panel_tab" @apply="applyAesthetics"
-            @clear="resetAesthetics" />
+        <AestheticsWizard :config="config.aesthetics" v-model:open="show_aes_wizard" :node="activeNode" />
+        <AttributeWizard :config="config.attributes" v-model:open="show_attr_wizard" :node="activeNode" />
     </div>
 </template>

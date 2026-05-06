@@ -11,6 +11,7 @@ const { branchLength, layout } = defineProps({
     layout: { type: String, default: 'rectangular' },
 })
 const tree = defineModel("tree", { type: Object })
+const activeNode = defineModel("active-node", { type: Object })
 const linkMenu = useTemplateRef('link-menu')
 const nodeMenu = useTemplateRef('node-menu')
 const emit = defineEmits(['change'])
@@ -70,10 +71,8 @@ function prerender() {
     nextTick(() => rendering = false)
 }
 watch([tree, () => layout, () => branchLength], prerender, { immediate: true })
-const activeNode = ref()
 async function onNodeClick(e, c, d) {
     if (e.button == 2) {
-        e.preventDefault()
         activeNode.value = d
         let action = await nodeMenu.value.show(d)
         if (action == 'reroot') {
@@ -132,6 +131,7 @@ watch([nTips, height], ([n, h], [on, oh]) => {
 const exportSettings = ref({
     branch_length: true, node_label: true,
     annotation: true, attribute: false,
+    use_attribute_label: false,
 })
 const vvtree = useTemplateRef('vvtree')
 defineExpose({ get plot() { return vvtree.value?.plot } })
@@ -139,7 +139,7 @@ defineExpose({ get plot() { return vvtree.value?.plot } })
 <template>
     <VVTree ref="vvtree" v-bind="$attrs" :width="width" @update:width="width = Math.round($event)" :height="height"
         @update:height="height = Math.round($event)" :branchLength v-model:tree="tree" :layout="layout"
-        @nodeclick="onNodeClick" @linkclick="onLinkClick" />
+        :active-node="activeNode" @nodeclick.prevent="onNodeClick" @linkclick="onLinkClick" />
     <Contextmenu ref="link-menu" v-slot="{ hide }" align="start">
         <button class="text-left px-2 py-1 hover:bg-current/5" @click="hide('reroot')">
             <Icon icon="lucide:git-commit-horizontal" class="text-xl inline-block align-middle" />
@@ -184,7 +184,14 @@ defineExpose({ get plot() { return vvtree.value?.plot } })
                 <Icon icon="lucide:git-graph" class="text-xl -scale-x-100 inline-block align-middle" />
                 tips
             </template>
-            <WTextarea class="whitespace-nowrap" :rows="10" :value="activeNode?.allTips?.map(d => d.name).join('\n')"
+            <p class="inline-flex flex-row flex-wrap p-2 gap-2">
+                <label class="text-sm whitespace-nowrap">
+                    <input type="checkbox" v-model="exportSettings.use_attribute_label">
+                    use_attribute_label
+                </label>
+            </p>
+            <WTextarea class="whitespace-nowrap" :rows="10"
+                :value="activeNode?.allTips?.map(d => (exportSettings.use_attribute_label ? d.attributes.text_label : null) ?? d.name).join('\n')"
                 readonly />
         </ContextmenuSubmenu>
         <ContextmenuSubmenu>
