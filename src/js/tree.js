@@ -99,9 +99,8 @@ export class TreeNode {
         return root;
     }
 
-    constructor({ name, label, branch_length, children = [], parent, annotations = {} } = {}) {
+    constructor({ name, branch_length, children = [], parent, annotations = {} } = {}) {
         this.name = name;
-        this.label = label ?? name;
         this.branch_length = branch_length;
         this.children = children;
         this.parent = parent;

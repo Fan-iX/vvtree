@@ -161,7 +161,7 @@ const nodeInfo = computed(() => {
     let height = config.value.display[config.value.layout].branch_length ? activeNode.value.height : activeNode.value.step_height
     return {
         name: activeNode.value.name,
-        label: activeNode.value.label ?? activeNode.value.name,
+        label: activeNode.value.attributes?.text_label ?? activeNode.value.name,
         depth, height,
         'depth%': depth / (depth + height) * 100 || 0,
         annotations: activeNode.value.annotations,
@@ -447,7 +447,7 @@ async function openAsPdf(svgXml) {
                     text
                     <hr class="text-gray-300">
                     <AttributeInput :node="activeNode" :target="attributeTargets" aes="text_label" type="text"
-                        :placeholder="activeNode.label ?? activeNode.name ?? '<empty>'" label="label" />
+                        :placeholder="activeNode.name ?? '<empty>'" label="label" />
                     <AttributeInput :node="activeNode" :target="attributeTargets" aes="text_color" type="color"
                         label="color" />
                     <AttributeInput :node="activeNode" :target="attributeTargets" aes="text_size" type="number" :min="1"

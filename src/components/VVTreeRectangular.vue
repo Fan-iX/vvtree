@@ -95,7 +95,7 @@ const fn_branch_width = d => d.attributes?.branch_width ?? branchWidth
 const fn_branch_linetype = d => d.attributes?.branch_linetype ?? linetype
 const fn_text_size = d => d.attributes?.text_size ?? textSize
 const fn_text_color = d => d.attributes?.text_color ?? d.attributes?.color ?? color
-const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
+const fn_text_label = d => d.attributes?.text_label ?? d.name
 const fn_bar_width = d => d.attributes?.bar_width ?? branchWidth * 5
 const fn_bar_color = d => d.attributes?.bar_color ?? "#0000FF88"
 const fn_node_anchor_x = d => d.attributes?.node_anchor_x

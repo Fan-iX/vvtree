@@ -1,6 +1,7 @@
 import { TreeNode } from "./tree.js"
 
 export class VVTreeNode extends TreeNode {
+    // parse Newick format phylogeny source file with support for node attributes in angle brackets and proportion in double colons
     static parseNewick(text) {
         if (!text?.trim?.()) return new this();
         let ancestors = [];
@@ -69,7 +70,7 @@ export class VVTreeNode extends TreeNode {
             } else {
                 let prev = tokens[i - 1];
                 if (prev == ')' || prev == '(' || prev == ',') {
-                    tree.label = tree.name = token;
+                    tree.name = token;
                 } else if (prev == '::') {
                     tree.annotations[":proportion"] = parseFloat(token);
                 } else if (prev == ':') {

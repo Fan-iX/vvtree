@@ -116,7 +116,7 @@ const fn_branch_width = d => d.attributes?.branch_width ?? branchWidth
 const fn_branch_linetype = d => d.attributes?.branch_linetype ?? linetype
 const fn_text_size = d => d.attributes?.text_size ?? textSize
 const fn_text_color = d => d.attributes?.text_color ?? d.attributes?.color ?? color
-const fn_text_label = d => d.attributes?.text_label ?? d.label ?? d.name
+const fn_text_label = d => d.attributes?.text_label ?? d.name
 const fn_node_anchor_x = d => d.attributes?.node_anchor_x ?? 0.5
 const fn_node_anchor_y = d => d.attributes?.node_anchor_y
 const fn_node_translate_x = d => d.attributes?.node_translate_x
