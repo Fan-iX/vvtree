@@ -112,7 +112,7 @@ function segmentText(text) {
     return result
 }
 
-function blobToBase64(blob) {
+async function blobToBase64(blob) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onloadend = () => resolve(reader.result.split(',')[1])
@@ -165,31 +165,28 @@ export async function svg2pdf(svgXml) {
             node.replaceWith(...segmentText(node.textContent))
         }
     }
-    function registerFont(name, url) {
-        return cfetch(url).then(r => r.blob()).then(blobToBase64)
-            .then(data => doc.addFileToVFS(name, data))
+    async function registerFont(name, face, url) {
+        let resp = await cfetch(url)
+        if (resp.ok) {
+            let blob = await resp.blob()
+            let filename = url.split('/').pop()
+            doc.addFileToVFS(filename, await blobToBase64(blob))
+            doc.addFont(filename, name, face)
+        }
     }
     if (svg.querySelector('[font-family="Noto Sans"]')) {
-        await registerFont('NotoSans-Regular.ttf', "/assets/fonts/NotoSans/NotoSans-Regular.ttf")
-        await registerFont('NotoSans-Bold.ttf', "/assets/fonts/NotoSans/NotoSans-Bold.ttf")
-        await registerFont('NotoSans-Italic.ttf', "/assets/fonts/NotoSans/NotoSans-Italic.ttf")
-        await registerFont('NotoSans-BoldItalic.ttf', "/assets/fonts/NotoSans/NotoSans-BoldItalic.ttf")
-        doc.addFont('NotoSans-Regular.ttf', 'Noto Sans', 'normal')
-        doc.addFont('NotoSans-Bold.ttf', 'Noto Sans', 'bold')
-        doc.addFont('NotoSans-Italic.ttf', 'Noto Sans', 'italic')
-        doc.addFont('NotoSans-BoldItalic.ttf', 'Noto Sans', 'bolditalic')
+        await registerFont('Noto Sans', 'normal', "/assets/fonts/NotoSans/NotoSans-Regular.ttf")
+        await registerFont('Noto Sans', 'bold', "/assets/fonts/NotoSans/NotoSans-Bold.ttf")
+        await registerFont('Noto Sans', 'italic', "/assets/fonts/NotoSans/NotoSans-Italic.ttf")
+        await registerFont('Noto Sans', 'bolditalic', "/assets/fonts/NotoSans/NotoSans-BoldItalic.ttf")
     }
     if (svg.querySelector('[font-family="Noto Sans SC"]')) {
-        await registerFont('NotoSansSC-Regular.ttf', "/assets/fonts/NotoSans/NotoSansSC-Regular.ttf")
-        await registerFont('NotoSansSC-Bold.ttf', "/assets/fonts/NotoSans/NotoSansSC-Bold.ttf")
-        doc.addFont('NotoSansSC-Regular.ttf', 'Noto Sans SC', 'normal')
-        doc.addFont('NotoSansSC-Bold.ttf', 'Noto Sans SC', 'bold')
+        await registerFont('Noto Sans SC', 'normal', "/assets/fonts/NotoSans/NotoSansSC-Regular.ttf")
+        await registerFont('Noto Sans SC', 'bold', "/assets/fonts/NotoSans/NotoSansSC-Bold.ttf")
     }
     if (svg.querySelector('[font-family="Noto Sans Arabic"]')) {
-        await registerFont('NotoSansArabic-Regular.ttf', "/assets/fonts/NotoSans/NotoSansArabic-Regular.ttf")
-        await registerFont('NotoSansArabic-Bold.ttf', "/assets/fonts/NotoSans/NotoSansArabic-Bold.ttf")
-        doc.addFont('NotoSansArabic-Regular.ttf', 'Noto Sans Arabic', 'normal')
-        doc.addFont('NotoSansArabic-Bold.ttf', 'Noto Sans Arabic', 'bold')
+        await registerFont('Noto Sans Arabic', 'normal', "/assets/fonts/NotoSans/NotoSansArabic-Regular.ttf")
+        await registerFont('Noto Sans Arabic', 'bold', "/assets/fonts/NotoSans/NotoSansArabic-Bold.ttf")
     }
     svg.querySelectorAll('[transform-origin]').forEach(el => {
         const originAttr = el.getAttribute('transform-origin').trim()
